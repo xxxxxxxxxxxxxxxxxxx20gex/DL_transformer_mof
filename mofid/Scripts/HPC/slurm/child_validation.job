@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH --job-name="mofid"
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH -t 24:00:00
+#SBATCH -p normal
+#SBATCH -A p20067
+#SBATCH --export=ALL
+
+# Needs to be called from either submit_parallel.job or submit_one.job to have the correct variables assigned.
+# Do not call this job file directly
+
+module purge
+module load python
+
+python Python/check_mof_composition.py ${SUMMARY_DIR}/${BASE_SMILES}.smi > ${SUMMARY_DIR}/${BASE_SMILES}_validation.json
+

@@ -1,0 +1,1 @@
+OC1=C([C](C(=N[CH]1)O)O)c1cc(O)c(cc1O)c1c(O)cncc1O.Oc1c(cc(c(c1O)c1c(O)cc(cc1O)C(=O)[O-])O)c1ccc(c(c1)O)C(=O)[O-].[O-]C(=O)c1cc(O)c(c2c1CC2)C(=O)[O-].[Zn][Zn] MOFid-v1.pcu.cat0.NO_REF;hMOF-1730

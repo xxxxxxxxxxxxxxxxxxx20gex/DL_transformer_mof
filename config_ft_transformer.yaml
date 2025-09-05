@@ -1,0 +1,37 @@
+batch_size: 128
+epochs: 30
+eval_every_n_epochs: 2
+fine_tune_from: ./ckpt/pretraining
+trained_with: 'Transformer'
+log_every_n_steps: 50
+gpu: cuda:0
+vocab_path: 'tokenizer/vocab_full.txt'
+num_workers: 0
+task: 'regression'
+
+optim:
+  optimizer: Adam
+  init_lr: 0.00005
+  weight_decay: 1e-6
+  new_layer_lr_multiplier: 200  # 新层学习率倍数
+  base_layer_lr_multiplier: 1   # 基础层学习率倍数
+
+dataloader:
+  valid_ratio: 0.15
+  test_ratio: 0.15
+  use_ratio: 1
+  randomSeed: 1
+
+dataset:
+  data_name: 'hMOF_CO2_0.5'
+  dataPath: './benchmark_datasets/hMOF/mofid/hMOF_CO2_0.5_small_mofid.csv'
+  # data_name: 'QMOF'
+  # dataPath: '/root/autodl-tmp/MOFormer/benchmark_datasets/QMOF/mofid/QMOF_small_mofid.csv'
+
+Transformer:
+  ntoken: 4021
+  d_model: 512
+  nhead: 8
+  d_hid: 512
+  nlayers: 6
+  dropout: 0.1

@@ -1,0 +1,4 @@
+*__pycache__*
+*vscode_
+.ipynb_checkpoints
+training_results

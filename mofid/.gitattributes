@@ -1,0 +1,10 @@
+# With advice from [Github help](https://help.github.com/articles/dealing-with-line-endings/)
+
+# For now, keep things simple for cygwin compilation by enforcing unix line endings
+openbabel/data/* text eol=lf
+openbabel/data/*.png binary
+Makefile text eol=lf
+*.sh text eol=lf
+
+# Apply spabs filter
+*.py filter=spabs

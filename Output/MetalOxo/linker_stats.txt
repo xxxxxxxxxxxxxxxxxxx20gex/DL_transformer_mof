@@ -1,0 +1,4 @@
+VRXAKZWMBTYLCT-UHFFFAOYSA-L	2	1	InChI=1S/C20H14O10/c21-11-3-7(1-2-9(11)20(29)30)10-6-14(24)16(18(26)17(10)25)15-12(22)4-8(19(27)28)5-13(15)23/h1-6,21-26H,(H,27,28)(H,29,30)/p-2	VRXAKZWMBTYLCT	Oc1c(cc(c(c1O)c1c(O)cc(cc1O)C(=O)[O-])O)c1ccc(c(c1)O)C(=O)[O-]	O[c]1[c]([cH][c]([c]([c]1O)[c]1[c](O)[cH][c]([cH][c]1O)[C]([O])[O-])O)[c]1[cH][cH][c]([c]([cH]1)O)[C]([O])[O-]
+BDEIEOIIZLEVBJ-UHFFFAOYSA-L	2	1	InChI=1S/C10H8O5/c11-7-3-6(9(12)13)4-1-2-5(4)8(7)10(14)15/h3,11H,1-2H2,(H,12,13)(H,14,15)/p-2	BDEIEOIIZLEVBJ	[O-]C(=O)c1cc(O)c(c2c1CC2)C(=O)[O-]	[O-][C]([c]1[cH][c](O)[c]([c]2[c]1CC2)[C]([O])[O-])[O]
+DWQNUYKLTMMFHX-UHFFFAOYSA-N	2	1	InChI=1S/C16H12N2O7/c19-8-2-7(14-12(23)5-18-16(25)15(14)24)9(20)1-6(8)13-10(21)3-17-4-11(13)22/h1-5,19-24H,(H,18,25)	DWQNUYKLTMMFHX	OC1=C([C](C(=N[CH]1)O)O)c1cc(O)c(cc1O)c1c(O)cncc1O	O[C]1[CH][N][C]([C]([C]1[c]1[cH][c](O)[c]([cH][c]1O)[c]1[c](O)[cH][n][cH][c]1O)O)O
+

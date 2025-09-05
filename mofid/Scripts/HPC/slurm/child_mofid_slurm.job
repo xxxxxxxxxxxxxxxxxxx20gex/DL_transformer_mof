@@ -1,0 +1,23 @@
+#!/bin/bash
+#SBATCH --job-name="mofid"
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH -t 24:00:00
+#SBATCH -p normal
+#SBATCH -A p20067
+#SBATCH --export=ALL
+
+# Needs to be called from either submit_parallel.job or submit_one.job to have the correct variables assigned.
+# Do not call this job file directly
+
+module purge
+module load python
+#module load git  # Needed earlier for run_folder.sh, but the explicit git dependence has been removed
+
+echo $SLURM_JOB_ID > "jobid_$OUTPUT_DIR"
+
+#OUTPUT_DIR="Output/"
+#OUTPUT_DIR="Output_$CIFOUTLABEL_$CIFDIR/"
+mkdir -p "$OUTPUT_DIR"
+bash Scripts/run_folder.sh "$CIFDIR" "$OUTPUT_DIR" > $MOFSTDOUT
+
