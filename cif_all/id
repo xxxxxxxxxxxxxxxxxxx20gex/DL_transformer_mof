@@ -1,0 +1,48 @@
+(base) root@autodl-container-fdf9468415-56697c55:~/autodl-tmp/MOFormer# python check_npy_format.py
+成功加载: //root/autodl-tmp/MOFormer/cif_toy/id_prop.npy
+数据类型: <class 'numpy.ndarray'>
+数据shape: (100, 2)
+数据dtype: object
+
+前5个条目:
+0: ['hMOF-5009591'
+ 'CCCOC1C(O[CH]CC)C2(C(=O)[O-])C(C(C1(C(=O)[O-])C(C2(OCCC)OCCC)OCCC)(OCCC)OCCC)O.[O-]C(=O)C#CC(=O)[O-].[Zn][O]([Zn])([Zn])[Zn]&&pcu.cat0']
+1: ['hMOF-5072462'
+ 'N=NC12C3(C#CC(=O)[O-])C4C2(C2(C1(C3C42N=N)N=N)C#CC(=O)[O-])N=N.N=NC12C3C4C2(C2C1C3(C42)C#CC(=O)[O-])C#CC(=O)[O-].N=Nc1cc2[CH]N=C(C3=NNN(c(n1)c23)[NH])N=N.[Cu][Cu]&&pcu.cat0']
+2: ['hMOF-5004785'
+ '[O-]C(=O)C#CC#CC#CC(=O)[O-].[Zn][O]([Zn])([Zn])[Zn]&&pcu.cat1']
+3: ['hMOF-1000366'
+ '[O-]C(=O)C#CC(=O)[O-].[O-]C(=O)C#Cc1ccc(c(c1)O)C#CC(=O)[O-].[O].[V]&&rna.cat0']
+4: ['hMOF-5044926'
+ 'CC12N3C4C1N1C2(C3C41)C.Cc1cc(C(=O)[O-])c(c(c1N=Nc1cc(C)c(c(c1)C)C(=O)[O-])C)C.[O-]C(=O)c1ccc(c(c1C)C)N=Nc1c(C)cc(c(c1C)C)C(=O)[O-].[Zn][Zn]&&pcu.cat0']
+
+cif_id.npy ================
+(base) root@autodl-container-fdf9468415-56697c55:~/autodl-tmp/MOFormer# python check_npy_format.py
+成功加载: /root/autodl-tmp/MOFormer/cif_all/cif_id.npy
+数据类型: <class 'numpy.ndarray'>
+数据shape: (413410,)
+数据dtype: object
+
+前5个条目:
+0: str_m3_o1_o19_nbo_sym.91.cif
+1: str_m3_o1_o13_pcu_sym.132.cif
+2: str_m1_o23_o29_pcu_sym.17.cif
+3: str_m3_o21_o28_pcu_sym.233.cif
+4: str_m2_o22_o22_nbo_sym.47.cif
+
+
+mofid_string.npy ================
+(base) root@autodl-container-fdf9468415-56697c55:~/autodl-tmp/MOFormer# python check_npy_format.py
+成功加载: /root/autodl-tmp/MOFormer/cif_all/mofid_string.npy
+数据类型: <class 'numpy.ndarray'>
+数据shape: (413410,)
+数据dtype: object
+
+前5个条目:
+0: CCOc1c(C(=O)[O-])c(OCC)c(c(c1Cl)C(=O)[O-])Cl.[O-]C(=O)C#CC#CC(=O)[O-].[Zn][Zn]&&nbo.cat0
+1: Clc1nc(Br)c(nc1Br)Cl.[O-]C(=O)c1c(Br)c(Cl)c2c(c1Cl)c(Cl)c(c(c2Cl)C(=O)[O-])Br.[O-]C(=O)c1cc(Cl)c(cc1Cl)C(=O)[O-].[Zn][Zn]&&pcu.cat0
+2: OC(=O)C1C(C(=O)O)C2(CCC1(CC2)C#CC(=O)[O-])C#CC(=O)[O-].OC(=O)c1cc(cc(c1C(=O)[O-])C(=O)O)N1C(=O)c2c(C)cc3c4c2c(C1=O)c(C)cc4c1c2c3cc(C)c3c2c(c(c1)C)C(=O)N(C3=O)c1cc(C(=O)O)c(c(c1)C(=O)O)C(=O)[O-].[Zn][O]([Zn])([Zn])[Zn]&&pcu.cat0
+3: N#CC(=C(c1ccccc1)C#N)c1ccccc1.[O-]C(=O)C#CC=CC#CC(=O)[O-].[O-]C(=O)c1ccc(cc1)N1C(=O)c2ccc3c4c2c(C1=O)ccc4C(=O)N(C3=O)c1ccc(cc1)C(=O)[O-].[Zn][Zn]&&pcu.cat0
+4: N#CC1C(C#N)C2(C(=O)[O-])C(CC1(CC2C#N)C(=O)[O-])C#N.N#CC1C(C#N)C2(CCC1(C(=O)[O-])C(C2(C#N)C#N)C#N)C(=O)[O-].N#CC1CC2(CC(C1(C(=O)[O-])C(C2(C#N)C#N)C#N)C#N)C(=O)[O-].[Cu][Cu]&&nbo.cat0
+
+

@@ -27,5 +27,8 @@ def check_npy_format(npy_file):
         print(f"加载npy文件失败: {e}")
 
 if __name__ == "__main__":
-    npy_file = '/root/autodl-tmp/MOFormer/cif_toy/id_prop.npy'
+    npy_file = '/root/autodl-tmp/MOFormer/cif_all/id_prop.npy'
+    # /mofid_string.npy
+    # /cif_id.npy
+
     check_npy_format(npy_file)

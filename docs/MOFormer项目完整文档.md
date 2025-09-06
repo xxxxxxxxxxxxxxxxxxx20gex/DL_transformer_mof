@@ -1,3 +1,9 @@
+<!-- pip install torch torchvision torchaudio
+pip install pymatgen  # 用于处理晶体结构
+pip install transformers  # Transformer模型
+pip install tensorboard  # 训练监控
+pip install ase  # 原子模拟环境 -->
+
 # MOFormer项目完整文档
 
 ## 项目概述
@@ -278,8 +284,23 @@ python generate_id_prop.py
 # SSL预训练
 python pretrain_SSL.py
 
-# 或传统MLM预训练
-python pretrain.py
+要进行SSL（自监督学习）预训练，您需要准备以下几个方面的内容：
+数据文件准备
+1. CIF结构文件数据集
+位置: 创建一个目录（如cif/或使用现有的cif_toy/）
+内容: 包含您要训练的所有MOF的CIF格式结构文件
+格式: *.cif 文件，每个文件包含一个MOF的晶体结构信息
+2. id_prop.npy映射文件 ⭐ 关键文件
+作用: 建立CIF文件名到MOFid字符串的映射关系
+格式: numpy数组，每行包含 [CIF文件名, MOFid字符串]
+生成方法:
+使用项目中的generate_id_prop.py脚本
+需要先安装和配置MOFid工具
+示例格式：[['hMOF-1000268', 'Zn.O2C&&O4C2&&cds'], ...]
+3. atom_init.json原子特征文件
+位置: 直接复制benchmark_datasets/atom_init.json到数据目录
+作用: 提供每种元素的初始特征向量
+内容: JSON格式，映射原子序数到特征向量
 ```
 
 #### 4. 微调

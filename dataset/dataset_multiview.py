@@ -355,53 +355,73 @@ CIFData数据集是对以CIF文件形式存储晶体结构的数据集的封装�
         assert os.path.exists(atom_init_file), 'atom_init.json does not exist!'
         self.ari = AtomCustomJSONInitializer(atom_init_file)
         self.gdf = GaussianDistance(dmin=dmin, dmax=self.radius, step=step)
+        
+        # 预计算所有数据以提升训练速度
+        print(f"开始预计算 {len(self.id_prop_data)} 个CIF文件的结构数据...")
+        self._precompute_all_data()
+        print("数据预计算完成！")
+
+    def _precompute_all_data(self):
+        """预计算所有CIF文件的结构数据"""
+        from tqdm import tqdm
+        
+        self.precomputed_data = []
+        
+        for idx in tqdm(range(len(self.id_prop_data)), desc="预计算CIF数据"):
+            cif_id, mofid = self.id_prop_data[idx]
+            fname = cif_id
+            if fname[-4:] != '.cif':
+                fname = fname + '.cif'
+            
+            try:
+                # 加载CIF文件
+                crys = Structure.from_file(os.path.join(self.root_dir, fname))
+                
+                # 预计算tokens
+                tokens = np.array([self.tokenizer.encode(mofid, max_length=512, truncation=True, padding='max_length')])
+                tokens = torch.from_numpy(tokens)
+                
+                # 预计算原子特征
+                crystal = crys.copy()
+                atom_fea = np.vstack([self.ari.get_atom_fea(crystal[i].specie.number)
+                                       for i in range(len(crystal))])
+                atom_fea = torch.Tensor(atom_fea)
+                
+                # 预计算邻居特征
+                all_nbrs = crystal.get_all_neighbors(self.radius, include_index=True)
+                all_nbrs = [sorted(nbrs, key=lambda x: x[1]) for nbrs in all_nbrs]
+                nbr_fea_idx, nbr_fea = [], []
+                
+                for nbr in all_nbrs:
+                    if len(nbr) < self.max_num_nbr:
+                        nbr_fea_idx.append(list(map(lambda x: x[2], nbr)) +
+                                           [0] * (self.max_num_nbr - len(nbr)))
+                        nbr_fea.append(list(map(lambda x: x[1], nbr)) +
+                                       [self.radius + 1.] * (self.max_num_nbr - len(nbr)))
+                    else:
+                        nbr_fea_idx.append(list(map(lambda x: x[2], nbr[:self.max_num_nbr])))
+                        nbr_fea.append(list(map(lambda x: x[1], nbr[:self.max_num_nbr])))
+                
+                nbr_fea_idx, nbr_fea = np.array(nbr_fea_idx), np.array(nbr_fea)
+                nbr_fea = self.gdf.expand(nbr_fea)
+                nbr_fea = torch.Tensor(nbr_fea)
+                nbr_fea_idx = torch.LongTensor(nbr_fea_idx)
+                
+                # 存储预计算的数据
+                self.precomputed_data.append(((atom_fea, nbr_fea, nbr_fea_idx), tokens, cif_id))
+                
+            except Exception as e:
+                print(f"警告：处理文件 {fname} 时出错: {e}")
+                # 创建一个空的数据项以避免索引错误
+                empty_atom_fea = torch.zeros(1, 64)  # 假设atom_fea_len=64
+                empty_nbr_fea = torch.zeros(1, self.max_num_nbr, len(self.gdf.filter))
+                empty_nbr_fea_idx = torch.zeros(1, self.max_num_nbr, dtype=torch.long)
+                empty_tokens = torch.zeros(1, 512, dtype=torch.long)
+                self.precomputed_data.append(((empty_atom_fea, empty_nbr_fea, empty_nbr_fea_idx), empty_tokens, cif_id))
 
     def __len__(self):
         return len(self.id_prop_data)
 
-    #@functools.lru_cache(maxsize=None)  # Cache loaded structures
     def __getitem__(self, idx):
-        #print(self.id_prop_data[idx])
-        cif_id, mofid = self.id_prop_data[idx]
-        fname = cif_id
-        if fname[-4:] != '.cif':
-            fname = fname + '.cif'
-        crys = Structure.from_file(os.path.join(self.root_dir, fname))
-
-        tokens = np.array([self.tokenizer.encode(mofid, max_length=512, truncation=True, padding='max_length')])
-        
-        tokens = torch.from_numpy(tokens)
-
-        crystal = crys.copy()
-
-        atom_fea = np.vstack([self.ari.get_atom_fea(crystal[i].specie.number)
-                               for  i  in  range ( len ( crystal ))])
-        atom_fea = torch.Tensor(atom_fea)
-
-        all_nbrs = crystal.get_all_neighbors(self.radius, include_index=True)
-        all_nbrs = [sorted(nbrs, key=lambda x: x[1]) for nbrs in all_nbrs]
-        nbr_fea_idx , nbr_fea  = [], []
-        for nbr in all_nbrs:
-            if len(nbr) < self.max_num_nbr:
-                warnings.warn('{} not find enough neighbors to build graph. '
-                              'If it happens frequently, consider increase '
-                              'radius.'.format(cif_id))
-                nbr_fea_idx.append(list(map(lambda x: x[2], nbr)) +
-                                   [0] * (self.max_num_nbr - len(nbr)))
-                nbr_fea.append(list(map(lambda x: x[1], nbr)) +
-                               [self.radius + 1.] * (self.max_num_nbr -
-                                                     len(nbr)))
-            else:
-                nbr_fea_idx.append(list(map(lambda x: x[2],
-                                            nbr[:self.max_num_nbr])))
-                nbr_fea.append(list(map(lambda x: x[1],
-                                        nbr[:self.max_num_nbr])))
-        nbr_fea_idx, nbr_fea = np.array(nbr_fea_idx), np.array(nbr_fea)
-
-        nbr_fea = self.gdf.expand(nbr_fea)
-        atom_fea = torch.Tensor(atom_fea)
-        nbr_fea = torch.Tensor(nbr_fea)
-        nbr_fea_idx = torch.LongTensor(nbr_fea_idx)
-        # target = torch.Tensor([float(target)])
-
-        return (atom_fea, nbr_fea, nbr_fea_idx), tokens, cif_id
+        """返回预计算的数据，速度极快"""
+        return self.precomputed_data[idx]

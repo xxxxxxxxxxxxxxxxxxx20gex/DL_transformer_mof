@@ -1,31 +1,55 @@
-import pandas as pd
-import logging
-import numpy as np
-import torch
-import os, shutil
-import functools
-from typing import Tuple
-from torch import nn, Tensor
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.utils.data import dataset, DataLoader
+
+import os
 from tokenizer.mof_tokenizer import MOFTokenizer
 from model.transformer import TransformerPretrain
 from model.utils import *
 from torch.utils.tensorboard import SummaryWriter
 from dataset.dataset_multiview import CIFData,collate_pool,get_train_val_test_loader
-from datetime import datetime, timedelta
-from time import time
-from model.mlm_pytorch_new import MLM
+from datetime import datetime
 from loss.barlow_twins import BarlowTwinsLoss
 import yaml
-from tqdm import tqdm
 from model.cgcnn_pretrain import CrystalGraphConvNet
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.autograd import Variable
-
 import warnings
 warnings.simplefilter("ignore")
+
+
+def setup_logger():
+    """
+    使用basicConfig设置日志配置，支持文件保存和控制台输出
+    """
+    # 创建logs目录
+    log_dir = 'logs'
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    
+    # 获取模块名
+    module_name = os.path.splitext(os.path.basename(__file__))[0]
+    
+    # 日志文件名格式：模块名_日期.log
+    today = datetime.now().strftime('%Y-%m-%d')
+    log_filename = os.path.join(log_dir, f'{module_name}_{today}.log')
+    
+    # 使用basicConfig设置日志配置（只配置一次）
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        handlers=[
+            logging.FileHandler(log_filename, encoding='utf-8'),
+            logging.StreamHandler()  # 控制台输出
+        ],
+        force=True  # 强制重新配置，避免重复配置问题
+    )
+    
+    # 获取logger实例
+    logger = logging.getLogger(module_name)
+    return logger
+
+
+# 模块级别的logger实例，避免重复创建
+logger = setup_logger()
 
 
 def _save_config_file(model_checkpoints_folder):
@@ -43,7 +67,6 @@ class Multiview(object):
     - 通过Barlow Twins损失函数实现多视图对比学习
     - 支持预训练权重加载和模型检查点保存
     """
-    
     def __init__(self, config):
         """
         初始化训练器
@@ -67,8 +90,9 @@ class Multiview(object):
         self.vocab_path = self.config['vocab_path']
         self.tokenizer = MOFTokenizer(self.vocab_path, model_max_length = 512, padding_side='right')
         self.dataset = CIFData(**self.config['graph_dataset'], tokenizer = self.tokenizer)
-
+ 
         # 设置数据加载器
+        logger.info("开始创建数据加载器...")
         collate_fn = collate_pool
         self.train_loader, self.valid_loader = get_train_val_test_loader(
             dataset=self.dataset,
@@ -77,6 +101,7 @@ class Multiview(object):
             batch_size=self.config['batch_size'], 
             **self.config['dataloader']
         )
+        logger.info(f"数据加载器创建完成 - 训练集: {len(self.train_loader)} batches, 验证集: {len(self.valid_loader)} batches")
 
     def _get_device(self):
         """设置训练设备（GPU/CPU）"""
@@ -87,7 +112,7 @@ class Multiview(object):
         else:
             device = 'cpu'
             self.config['cuda'] = False
-        print("Running on:", device)
+        logger.info(f"Running on: {device}")
         return device
 
     def _move_data_to_device(self, graph_data, transformer_data):
@@ -118,15 +143,6 @@ class Multiview(object):
     def _step(self, transformer_model, graph_model, transformer_data, graph_data, epsilon = 0):
         """
         单步训练：计算Barlow Twins损失
-        
-        Args:
-            transformer_model: Transformer模型
-            graph_model: CGCNN图模型
-            transformer_data: Transformer输入数据
-            graph_data: 图数据
-            
-        Returns:
-            Tensor: Barlow Twins损失值
         """
         # 获取图数据的表示
         zjs = graph_model(*graph_data)  # [N,C]
@@ -176,6 +192,7 @@ class Multiview(object):
         best_valid_loss = np.inf
 
         for epoch_counter in range(self.config['epochs']):
+            logger.info(f"开始第 {epoch_counter} 个epoch的训练...")
             for bn, (graph_data, transformer_data, _) in enumerate(self.train_loader):
                 # 移动数据到设备
                 input_graph, input_transformer = self._move_data_to_device(graph_data, transformer_data)
@@ -187,7 +204,7 @@ class Multiview(object):
                 if n_iter % self.config['log_every_n_steps'] == 0:
                     self.writer.add_scalar('train_loss', loss.item(), global_step=n_iter)
                     self.writer.add_scalar('cosine_lr_decay', scheduler.get_last_lr()[0], global_step=n_iter)
-                    print(epoch_counter, bn, loss.item())
+                    logger.info(f"Epoch {epoch_counter}, Batch {bn}, Loss: {loss.item():.6f}")
                 
                 # 反向传播
                 optimizer.zero_grad()
@@ -200,7 +217,7 @@ class Multiview(object):
             # 验证模型
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
                 valid_loss = self._validate(transformer_model, graph_model, self.valid_loader)
-                print('Validation', valid_loss)
+                logger.info(f"Validation Loss: {valid_loss:.6f}")
                 if valid_loss < best_valid_loss:
                     # 保存最佳模型（验证损失最低的模型）
                     best_valid_loss = valid_loss
@@ -239,10 +256,10 @@ class Multiview(object):
             state_dict_g = torch.load(os.path.join(checkpoints_folder, 'model_graph_11.pth'), map_location = self.config['gpu'])
             graph_model.load_state_dict(state_dict_g)
 
-            print("Loaded pre-trained model with success.")
+            logger.info("Loaded pre-trained model with success.")
             
         except FileNotFoundError:
-            print("Pre-trained weights not found. Training from scratch.")
+            logger.info("Pre-trained weights not found. Training from scratch.")
 
         return transformer_model, graph_model
 
@@ -282,7 +299,7 @@ class Multiview(object):
 
 if __name__ == "__main__":
     config = yaml.load(open("config_multiview.yaml", "r"), Loader=yaml.FullLoader)
-    print(config)
+    logger.info(f"Configuration loaded: {config}")
 
     mof_multiview = Multiview(config)
     mof_multiview.train()
