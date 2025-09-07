@@ -1,4 +1,4 @@
-batch_size: 128
+batch_size: 64
 epochs: 100
 eval_every_n_epochs: 1
 save_every_n_epochs: 5  # 每5个epoch保存一次检查点
@@ -29,7 +29,7 @@ graph_dataset:
 
 dataloader:
   val_ratio: 0.05   # Please change here if you using the entire cif files, change to 0.05 as mentioned in SI of the paper
-  num_workers: 0    # 设为0避免多进程问题，启用缓存后单进程性能更好
+  num_workers: 0    # 增加并行数据加载，提升性能
 
 barlow_loss:
   embed_size: 512

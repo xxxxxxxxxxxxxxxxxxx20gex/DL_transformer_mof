@@ -2,7 +2,7 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$" />
-    <orderEntry type="jdk" jdkName="Remote Python 3.9.23 (sftp://root@connect.bjb1.seetacloud.com:10824/root/miniconda3/envs/myenv/bin/python3)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="base" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">
