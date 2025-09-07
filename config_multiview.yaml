@@ -1,5 +1,5 @@
-batch_size: 128  # 4090 24G可以支持更大batch
-epochs: 100
+batch_size: 256
+epochs: 50
 eval_every_n_epochs: 1
 save_every_n_epochs: 5  # 每5个epoch保存一次检查点
 fine_tune_from: None

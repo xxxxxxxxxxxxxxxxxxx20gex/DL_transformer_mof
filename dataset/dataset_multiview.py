@@ -363,7 +363,7 @@ CIFData数据集是对以CIF文件形式存储晶体结构的数据集的封装�
     def __len__(self):
         return len(self.id_prop_data)
 
-    @functools.lru_cache(maxsize=1000)  # Cache loaded structures - 启用缓存减少重复计算
+    @functools.lru_cache(maxsize=5000)  # Cache loaded structures - 启用缓存减少重复计算，4090 24G支持更大缓存
     def __getitem__(self, idx):
         #print(self.id_prop_data[idx])
         cif_id, mofid = self.id_prop_data[idx]
