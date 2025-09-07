@@ -115,7 +115,7 @@ class MOF_tsne_Dataset(Dataset):
 
 def get_train_val_test_loader(dataset, collate_fn=default_collate,
                               batch_size=64, val_ratio=0.1, random_seed = 11, num_workers=1, 
-                              pin_memory=False, **kwargs):
+                              pin_memory=False, persistent_workers=False, prefetch_factor=2, **kwargs):
     """
     Utility function for dividing a dataset to train, val, test datasets.
     !!! The dataset needs to be shuffled before using the function !!!
@@ -155,11 +155,15 @@ def get_train_val_test_loader(dataset, collate_fn=default_collate,
     train_loader = DataLoader(dataset, batch_size=batch_size,
                               sampler=train_sampler,
                               num_workers=num_workers, drop_last=True,
-                              collate_fn=collate_fn, pin_memory=pin_memory)
+                              collate_fn=collate_fn, pin_memory=pin_memory,
+                              persistent_workers=persistent_workers and num_workers > 0,
+                              prefetch_factor=prefetch_factor if num_workers > 0 else 2)
     val_loader = DataLoader(dataset, batch_size=batch_size,
                             sampler=val_sampler,
                             num_workers=num_workers, drop_last=True,
-                            collate_fn=collate_fn, pin_memory=pin_memory)
+                            collate_fn=collate_fn, pin_memory=pin_memory,
+                            persistent_workers=persistent_workers and num_workers > 0,
+                            prefetch_factor=prefetch_factor if num_workers > 0 else 2)
     return train_loader, val_loader
 
 

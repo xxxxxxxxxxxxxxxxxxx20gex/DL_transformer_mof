@@ -1,5 +1,12 @@
 
 import os
+import time
+import logging
+import shutil
+import numpy as np
+import torch
+import torch.backends.cudnn as cudnn
+from torch.cuda.amp import GradScaler, autocast
 from tokenizer.mof_tokenizer import MOFTokenizer
 from model.transformer import TransformerPretrain
 from model.utils import *
@@ -77,6 +84,11 @@ class Multiview(object):
         self.config = config
         self.device = self._get_device()
         
+        # 启用cuDNN benchmark优化（适用于固定输入尺寸的网络）
+        if self.config.get('cuda', False):
+            cudnn.benchmark = True
+            logger.info("已启用cuDNN benchmark优化")
+        
         # 设置TensorBoard日志
         current_time = datetime.now().strftime('%b%d_%H-%M-%S')
         dir_name = current_time
@@ -97,11 +109,18 @@ class Multiview(object):
         self.train_loader, self.valid_loader = get_train_val_test_loader(
             dataset=self.dataset,
             collate_fn=collate_fn,
-            pin_memory=self.config['gpu'],
+            pin_memory=self.config.get('pin_memory', self.config['gpu']),
             batch_size=self.config['batch_size'], 
             **self.config['dataloader']
         )
         logger.info(f"数据加载器创建完成 - 训练集: {len(self.train_loader)} batches, 验证集: {len(self.valid_loader)} batches")
+        
+        # 打印设备信息
+        logger.info(f"CUDA available: {torch.cuda.is_available()}, device setting: {self.device}")
+        logger.info(f"CUDA device count: {torch.cuda.device_count()}")
+        if torch.cuda.is_available():
+            logger.info(f"Current GPU: {torch.cuda.get_device_name()}")
+            logger.info(f"GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
 
     def _get_device(self):
         """设置训练设备（GPU/CPU）"""
@@ -173,6 +192,10 @@ class Multiview(object):
         transformer_model = TransformerPretrain(**self.config["Transformer"]).to(self.device)
         graph_model = CrystalGraphConvNet(orig_atom_fea_len, nbr_fea_len, **self.config['model_cgcnn']).to(self.device)
 
+        # 打印模型设备信息
+        logger.info(f"Transformer model device: {next(transformer_model.parameters()).device}")
+        logger.info(f"Graph model device: {next(graph_model.parameters()).device}")
+
         # 加载预训练权重
         transformer_model, graph_model = self._load_pre_trained_weights(transformer_model, graph_model)
 
@@ -181,6 +204,12 @@ class Multiview(object):
                                    lr = self.config['optim']['init_lr'], 
                                    weight_decay=eval(self.config['optim']['weight_decay']))
         scheduler = CosineAnnealingLR(optimizer, T_max=len(self.train_loader), eta_min=0, last_epoch=-1)
+
+        # 初始化AMP scaler
+        use_amp = self.config.get('use_amp', True)
+        scaler = GradScaler(enabled=use_amp and self.config.get('cuda', False))
+        if use_amp and self.config.get('cuda', False):
+            logger.info("已启用AMP混合精度训练")
 
         # 设置检查点目录
         model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
@@ -193,26 +222,39 @@ class Multiview(object):
 
         for epoch_counter in range(self.config['epochs']):
             logger.info(f"开始第 {epoch_counter} 个epoch的训练...")
+            epoch_start_time = time.time()
+            
             for bn, (graph_data, transformer_data, _) in enumerate(self.train_loader):
+                batch_start_time = time.time()
+                
                 # 移动数据到设备
                 input_graph, input_transformer = self._move_data_to_device(graph_data, transformer_data)
+                data_load_time = time.time() - batch_start_time
                 
-                # 前向传播计算损失
-                loss = self._step(transformer_model, graph_model, input_transformer, input_graph)
+                # 前向传播计算损失（使用AMP）
+                optimizer.zero_grad()
+                with autocast(enabled=use_amp and self.config.get('cuda', False)):
+                    loss = self._step(transformer_model, graph_model, input_transformer, input_graph)
+
+                # 反向传播（使用AMP scaler）
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+                
+                step_time = time.time() - batch_start_time
 
                 # 记录训练日志
                 if n_iter % self.config['log_every_n_steps'] == 0:
                     self.writer.add_scalar('train_loss', loss.item(), global_step=n_iter)
                     self.writer.add_scalar('cosine_lr_decay', scheduler.get_last_lr()[0], global_step=n_iter)
-                    logger.info(f"Epoch {epoch_counter}, Batch {bn}, Loss: {loss.item():.6f}")
+                    logger.info(f"Epoch {epoch_counter}, Batch {bn}, Loss: {loss.item():.6f}, "
+                              f"data_time={data_load_time:.3f}s, step_time={step_time:.3f}s")
                 
-                # 反向传播
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
                 n_iter += 1
 
             torch.cuda.empty_cache()
+            epoch_time = time.time() - epoch_start_time
+            logger.info(f"Epoch {epoch_counter} 完成，耗时: {epoch_time:.2f}s")
 
             # 验证模型
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
@@ -275,6 +317,8 @@ class Multiview(object):
         Returns:
             float: 平均验证损失
         """
+        use_amp = self.config.get('use_amp', True)
+        
         with torch.no_grad():
             transformer_model.eval()
             graph_model.eval()
@@ -285,8 +329,9 @@ class Multiview(object):
                 # 移动数据到设备
                 input_graph, input_transformer = self._move_data_to_device(graph_data, transformer_data)
                 
-                # 计算验证损失
-                loss = self._step(transformer_model, graph_model, input_transformer, input_graph)
+                # 计算验证损失（使用AMP）
+                with autocast(enabled=use_amp and self.config.get('cuda', False)):
+                    loss = self._step(transformer_model, graph_model, input_transformer, input_graph)
                 loss_total += loss.item() * len(batch_cif_ids)
                 total_num += len(batch_cif_ids)
                 
