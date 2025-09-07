@@ -20,7 +20,7 @@ model_cgcnn:
   n_h: 1
 
 graph_dataset:
-  root_dir: /root/autodl-tmp/MOFormer/cif_all/cif   # change here to use cif
+  root_dir: /media/gzl/HHDisk/lyq/cif_all/cif   # change here to use cif
   max_num_nbr: 12
   radius: 8
   dmin: 0
