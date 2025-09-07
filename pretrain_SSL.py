@@ -247,8 +247,12 @@ class Multiview(object):
                 if n_iter % self.config['log_every_n_steps'] == 0:
                     self.writer.add_scalar('train_loss', loss.item(), global_step=n_iter)
                     self.writer.add_scalar('cosine_lr_decay', scheduler.get_last_lr()[0], global_step=n_iter)
+                    # 计算GPU利用率相关指标
+                    gpu_util = torch.cuda.utilization() if torch.cuda.is_available() else 0
+                    gpu_memory = torch.cuda.memory_allocated() / 1024**3 if torch.cuda.is_available() else 0
                     logger.info(f"Epoch {epoch_counter}, Batch {bn}, Loss: {loss.item():.6f}, "
-                              f"data_time={data_load_time:.3f}s, step_time={step_time:.3f}s")
+                              f"data_time={data_load_time:.3f}s, step_time={step_time:.3f}s, "
+                              f"gpu_util={gpu_util}%, gpu_mem={gpu_memory:.1f}GB")
                 
                 n_iter += 1
 

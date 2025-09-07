@@ -31,9 +31,9 @@ graph_dataset:
 
 dataloader:
   val_ratio: 0.05   # Please change here if you using the entire cif files, change to 0.05 as mentioned in SI of the paper
-  num_workers: 8    # 增加并行数据加载，提升性能
+  num_workers: 16   # 大幅增加并行数据加载，解决GPU等待问题
   persistent_workers: True  # 保持worker进程，减少重启开销
-  prefetch_factor: 2  # 预取因子，提升数据加载效率
+  prefetch_factor: 4  # 增加预取因子，提升数据加载效率
 
 barlow_loss:
   embed_size: 512
