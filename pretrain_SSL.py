@@ -21,7 +21,6 @@ from torch.autograd import Variable
 import warnings
 warnings.simplefilter("ignore")
 
-
 def setup_logger():
     """
     使用basicConfig设置日志配置，支持文件保存和控制台输出
@@ -53,8 +52,6 @@ def setup_logger():
     # 获取logger实例
     logger = logging.getLogger(module_name)
     return logger
-
-
 # 模块级别的logger实例，避免重复创建
 logger = setup_logger()
 

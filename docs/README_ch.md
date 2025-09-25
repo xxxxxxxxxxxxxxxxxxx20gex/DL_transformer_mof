@@ -34,7 +34,7 @@ https://www.linkedin.com/in/zhonglincao/?trk=public_profile_browsemap, https://w
 # 创建新环境
 $ conda create -n myenv python=3.9
 $ conda activate moformer
-$ conda install pytorch==1.10.1 cudatoolkit=11.3 -c pytorch -c conda-forge
+$ pip install torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118 --index-url https://download.pytorch.org/whl/cu118
 $ conda install --channel conda-forge pymatgen
 $ pip install transformers
 $ conda install -c conda-forge tensorboard

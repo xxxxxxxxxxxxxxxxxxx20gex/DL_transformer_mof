@@ -33,7 +33,7 @@ dataloader:
   val_ratio: 0.05   # Please change here if you using the entire cif files, change to 0.05 as mentioned in SI of the paper
   num_workers: 32   # 进一步增加并行度，减少批处理等待
   persistent_workers: True  # 保持worker进程，减少重启开销
-  prefetch_factor: 8  # 大幅增加预取，提前准备更多数据
+  prefetch_factor: 32  # 大幅增加预取，提前准备更多数据
 
 barlow_loss:
   embed_size: 512
