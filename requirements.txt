@@ -1,3 +1,7 @@
 ase
 tensorboard==2.15.1 
 grpcio==1.59.3
+pyyaml
+scikit-learn
+numpy
+pymatgen

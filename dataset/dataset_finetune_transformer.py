@@ -14,8 +14,6 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.dataloader import default_collate
 from torch.utils.data.sampler import SubsetRandomSampler
 
-
-
 class CORE_Dataset(Dataset):
     """
     用于 CORE 数据的示例数据集（保留原始实现，仅补充注释）。
@@ -71,10 +69,10 @@ class MOF_ID_Dataset(Dataset):
     @functools.lru_cache(maxsize=None)
     def __getitem__(self, index):
             # 读取第 index 条样本并转为张量
-            X = torch.from_numpy(np.asarray(self.tokens[index]))  # 建议在训练前确保 dtype 为 long
-            y = torch.from_numpy(np.asarray(self.label[index])).view(-1,1)
+            X = torch.tensor(self.tokens[index], dtype=torch.long)  # 确保 dtype 为 long
+            y = torch.tensor(self.label[index], dtype=torch.float32).view(-1,1)
 
-            return X, y.float()
+            return X, y
 
 
 class MOF_pretrain_Dataset(Dataset):

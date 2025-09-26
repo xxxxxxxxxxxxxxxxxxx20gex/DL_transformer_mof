@@ -1,18 +1,4 @@
 
-"""
-Transformer 微调训练脚本（原版）
-
-说明（给初学者）：
-- 本脚本完成从数据读取、数据划分、构建数据加载器，到模型构建、加载预训练权重、训练/验证/测试的完整流程。
-- 训练目标为回归（默认使用 MSE 损失，验证与测试阶段使用 MAE 度量）。
-- 不建议初学者一上来就改动逻辑。先跑通、理解数据形状与配置项，再逐步调整超参数。
-
-术语对照：
-- backbone/transformer：特征提取主干（不含任务头）
-- regression head：下游回归头，将特征映射到标量
-- normalizer：对回归标签做标准化（训练时使用，评估时反标准化计算 MAE）
-"""
-
 from tokenizer.mof_tokenizer import MOFTokenizer
 from model.transformer import TransformerRegressor, Transformer
 from model.utils import *
@@ -57,7 +43,6 @@ def _parse_finetuning_info(config):
         ftf = config['fine_tune_from'].split('/')[-1]
         ptw = config['trained_with']
         return ftf, ptw
-
 
 def _create_log_directory(ptw, task_name, seed):
     """创建训练日志目录"""
@@ -110,7 +95,7 @@ class FineTune(object):
         self.criterion = nn.MSELoss()
 
         # 用训练集标签统计均值/方差，训练时对目标做标准化，评估时再反标准化计算 MAE
-        self.normalizer = Normalizer(torch.from_numpy(self.train_dataset.label))
+        self.normalizer = Normalizer(torch.tensor(self.train_dataset.label, dtype=torch.float32))
 
     def _load_csv_data(self, data_path):
         """加载CSV数据文件"""

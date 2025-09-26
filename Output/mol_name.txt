@@ -1,1 +1,0 @@
-/root/autodl-tmp/MOFormer/cif_toy/hMOF-1730.cif

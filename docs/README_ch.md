@@ -4,40 +4,21 @@
 <em>美国化学会志(JACS)</em> https://pubs.acs.org/doi/10.1021/jacs.2c11420 https://arxiv.org/abs/2210.14188 https://arxiv.org/pdf/2210.14188.pdf </br>
 https://www.linkedin.com/in/zhonglincao/?trk=public_profile_browsemap, https://www.linkedin.com/in/rishikesh-magar, https://yuyangw.github.io/, https://www.meche.engineering.cmu.edu/directory/bios/barati-farimani-amir.html (*同等贡献) </br>
 卡内基梅隆大学 </br>
-
 <img src="figs/pipeline.png" width="600">
 
 这是论文https://pubs.acs.org/doi/10.1021/jacs.2c11420的官方实现。在这项工作中，我们提出了一种基于Transformer模型的与结构无关的深度学习方法，命名为<strong><em>MOFormer</em></strong>，用于MOF的性质预测。<strong><em>MOFormer</em></strong>以MOF的文本字符串表示(MOFid)作为输入，从而避免了获取假设MOF的3D结构的需求，并加速了筛选过程。此外，我们引入了一个自监督学习框架，通过在超过40万个公开可用的MOF数据上最大化其与结构无关的表示和基于结构的晶体图卷积神经网络(CGCNN)表示之间的互相关性来预训练<strong><em>MOFormer</em></strong>。基准测试表明，预训练提高了两种模型在各种下游预测任务上的预测准确性。如果您在我们的研究中发现我们的工作有用，请引用：
 
-```
-@article{doi:10.1021/jacs.2c11420,
-    author = {Cao, Zhonglin and Magar, Rishikesh and Wang, Yuyang and Barati Farimani, Amir},
-    title = {MOFormer: Self-Supervised Transformer Model for Metal–Organic Framework Property Prediction},
-    journal = {Journal of the American Chemical Society},
-    volume = {145},
-    number = {5},
-    pages = {2958-2967},
-    year = {2023},
-    doi = {10.1021/jacs.2c11420},
-    URL = {https://doi.org/10.1021/jacs.2c11420}
-}
-```
-
-
 ## 开始使用
-
 ### 安装
-
 设置conda环境并克隆github仓库
 
 ```
 # 创建新环境
-$ conda create -n myenv python=3.9
-$ conda activate moformer
-$ pip install torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118 --index-url https://download.pytorch.org/whl/cu118
-$ conda install --channel conda-forge pymatgen
-$ pip install transformers
-$ conda install -c conda-forge tensorboard
+conda create -n myenv python=3.9
+conda activate moformer
+pip install torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118 --index-url https://download.pytorch.org/whl/cu118
+pip install --ignore-installed ruamel.yaml pymatgen
+pip install transformers tensorboard
 
 # 克隆MOFormer源代码
 $ git clone https://github.com/zcao0420/MOFormer
