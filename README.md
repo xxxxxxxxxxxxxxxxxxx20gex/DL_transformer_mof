@@ -35,16 +35,12 @@ Set up conda environment and clone the github repo
 
 ```
 # create a new environment
-$ conda create -n myenv python=3.9
+$ conda create -n moformer python=3.9
 $ conda activate moformer
 $ conda install pytorch==1.10.1 cudatoolkit=11.3 -c pytorch -c conda-forge
 $ conda install --channel conda-forge pymatgen
 $ pip install transformers
 $ conda install -c conda-forge tensorboard
-
-# clone the source code of MOFormer
-$ git clone https://github.com/zcao0420/MOFormer
-$ cd MOFormer
 ```
 
 ### Dataset

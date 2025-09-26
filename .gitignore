@@ -3,3 +3,11 @@
 .ipynb_checkpoints
 training_results
 mofid
+.ipynb_checkpoints/
+.idea/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.vscode
+

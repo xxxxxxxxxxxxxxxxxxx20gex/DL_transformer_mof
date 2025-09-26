@@ -1,0 +1,169 @@
+2025-09-07 00:01:20 - INFO - pretrain_SSL - Configuration loaded: {'batch_size': 128, 'epochs': 100, 'eval_every_n_epochs': 1, 'save_every_n_epochs': 5, 'fine_tune_from': 'None', 'log_every_n_steps': 50, 'gpu': 'cuda:0', 'vocab_path': 'tokenizer/vocab_full.txt', 'cuda': True, 'optim': {'optimizer': 'Adam', 'init_lr': 1e-05, 'weight_decay': '1e-6'}, 'model_cgcnn': {'atom_fea_len': 64, 'h_fea_len': 512, 'n_conv': 3, 'n_h': 1}, 'graph_dataset': {'root_dir': '/media/gzl/HHDisk/lyq/cif_all/cif', 'max_num_nbr': 12, 'radius': 8, 'dmin': 0, 'step': 0.2, 'random_seed': 666}, 'dataloader': {'val_ratio': 0.05, 'num_workers': 0}, 'barlow_loss': {'embed_size': 512, 'lambd': 0.0051}, 'celoss': {'epsilon': 0.5}, 'Transformer': {'ntoken': 4021, 'd_model': 512, 'nhead': 8, 'd_hid': 512, 'nlayers': 6, 'dropout': 0.1}}
+2025-09-07 00:01:20 - INFO - pretrain_SSL - Running on: cuda:0
+2025-09-07 14:54:38 - INFO - pretrain_SSL - Configuration loaded: {'batch_size': 128, 'epochs': 100, 'eval_every_n_epochs': 1, 'save_every_n_epochs': 5, 'fine_tune_from': 'None', 'log_every_n_steps': 50, 'gpu': 'cuda:0', 'vocab_path': 'tokenizer/vocab_full.txt', 'cuda': True, 'optim': {'optimizer': 'Adam', 'init_lr': 1e-05, 'weight_decay': '1e-6'}, 'model_cgcnn': {'atom_fea_len': 64, 'h_fea_len': 512, 'n_conv': 3, 'n_h': 1}, 'graph_dataset': {'root_dir': '/media/gzl/HHDisk/lyq/cif_all/cif', 'max_num_nbr': 12, 'radius': 8, 'dmin': 0, 'step': 0.2, 'random_seed': 666}, 'dataloader': {'val_ratio': 0.05, 'num_workers': 0}, 'barlow_loss': {'embed_size': 512, 'lambd': 0.0051}, 'celoss': {'epsilon': 0.5}, 'Transformer': {'ntoken': 4021, 'd_model': 512, 'nhead': 8, 'd_hid': 512, 'nlayers': 6, 'dropout': 0.1}}
+2025-09-07 14:54:38 - INFO - pretrain_SSL - Running on: cuda:0
+2025-09-07 15:04:19 - INFO - pretrain_SSL - Configuration loaded: {'batch_size': 64, 'epochs': 100, 'eval_every_n_epochs': 1, 'save_every_n_epochs': 5, 'fine_tune_from': 'None', 'log_every_n_steps': 50, 'gpu': 'cuda:0', 'vocab_path': 'tokenizer/vocab_full.txt', 'cuda': True, 'optim': {'optimizer': 'Adam', 'init_lr': 1e-05, 'weight_decay': '1e-6'}, 'model_cgcnn': {'atom_fea_len': 64, 'h_fea_len': 512, 'n_conv': 3, 'n_h': 1}, 'graph_dataset': {'root_dir': '/media/gzl/HHDisk/lyq/cif_all/cif', 'max_num_nbr': 12, 'radius': 8, 'dmin': 0, 'step': 0.2, 'random_seed': 666}, 'dataloader': {'val_ratio': 0.05, 'num_workers': 0}, 'barlow_loss': {'embed_size': 512, 'lambd': 0.0051}, 'celoss': {'epsilon': 0.5}, 'Transformer': {'ntoken': 4021, 'd_model': 512, 'nhead': 8, 'd_hid': 512, 'nlayers': 6, 'dropout': 0.1}}
+2025-09-07 15:04:19 - INFO - pretrain_SSL - Running on: cuda:0
+2025-09-07 15:04:19 - INFO - pretrain_SSL - 开始创建数据加载器...
+2025-09-07 15:04:19 - INFO - pretrain_SSL - 数据加载器创建完成 - 训练集: 6136 batches, 验证集: 322 batches
+2025-09-07 15:04:19 - INFO - pretrain_SSL - Pre-trained weights not found. Training from scratch.
+2025-09-07 15:04:20 - INFO - pretrain_SSL - 开始第 0 个epoch的训练...
+2025-09-07 15:04:33 - INFO - pretrain_SSL - Epoch 0, Batch 0, Loss: 536.549255
+2025-09-07 15:30:55 - INFO - pretrain_SSL - Configuration loaded: {'batch_size': 128, 'epochs': 100, 'eval_every_n_epochs': 1, 'save_every_n_epochs': 5, 'fine_tune_from': 'None', 'log_every_n_steps': 50, 'gpu': 'cuda:0', 'vocab_path': 'tokenizer/vocab_full.txt', 'cuda': True, 'use_amp': True, 'pin_memory': True, 'optim': {'optimizer': 'Adam', 'init_lr': 1e-05, 'weight_decay': '1e-6'}, 'model_cgcnn': {'atom_fea_len': 64, 'h_fea_len': 512, 'n_conv': 3, 'n_h': 1}, 'graph_dataset': {'root_dir': '/media/gzl/HHDisk/lyq/cif_all/cif', 'max_num_nbr': 12, 'radius': 8, 'dmin': 0, 'step': 0.2, 'random_seed': 666}, 'dataloader': {'val_ratio': 0.05, 'num_workers': 8, 'persistent_workers': True, 'prefetch_factor': 2}, 'barlow_loss': {'embed_size': 512, 'lambd': 0.0051}, 'celoss': {'epsilon': 0.5}, 'Transformer': {'ntoken': 4021, 'd_model': 512, 'nhead': 8, 'd_hid': 512, 'nlayers': 6, 'dropout': 0.1}}
+2025-09-07 15:30:55 - INFO - pretrain_SSL - Running on: cuda:0
+2025-09-07 15:30:55 - INFO - pretrain_SSL - 已启用cuDNN benchmark优化
+2025-09-07 15:30:55 - INFO - pretrain_SSL - 开始创建数据加载器...
+2025-09-07 15:30:55 - INFO - pretrain_SSL - 数据加载器创建完成 - 训练集: 3068 batches, 验证集: 161 batches
+2025-09-07 15:30:55 - INFO - pretrain_SSL - CUDA available: True, device setting: cuda:0
+2025-09-07 15:30:55 - INFO - pretrain_SSL - CUDA device count: 2
+2025-09-07 15:30:55 - INFO - pretrain_SSL - Current GPU: NVIDIA GeForce RTX 3090
+2025-09-07 15:30:55 - INFO - pretrain_SSL - GPU memory: 23.7 GB
+2025-09-07 15:30:55 - INFO - pretrain_SSL - Transformer model device: cuda:0
+2025-09-07 15:30:55 - INFO - pretrain_SSL - Graph model device: cuda:0
+2025-09-07 15:30:55 - INFO - pretrain_SSL - Pre-trained weights not found. Training from scratch.
+2025-09-07 15:30:56 - INFO - pretrain_SSL - 已启用AMP混合精度训练
+2025-09-07 15:30:56 - INFO - pretrain_SSL - 开始第 0 个epoch的训练...
+2025-09-07 15:31:28 - INFO - pretrain_SSL - Epoch 0, Batch 0, Loss: 528.930786, data_time=0.014s, step_time=0.489s
+2025-09-07 15:34:00 - INFO - pretrain_SSL - Epoch 0, Batch 50, Loss: 516.336975, data_time=0.004s, step_time=0.201s
+2025-09-07 15:36:33 - INFO - pretrain_SSL - Epoch 0, Batch 100, Loss: 438.225861, data_time=0.002s, step_time=0.198s
+2025-09-07 15:36:56 - INFO - pretrain_SSL - Configuration loaded: {'batch_size': 128, 'epochs': 100, 'eval_every_n_epochs': 1, 'save_every_n_epochs': 5, 'fine_tune_from': 'None', 'log_every_n_steps': 50, 'gpu': 'cuda:0', 'vocab_path': 'tokenizer/vocab_full.txt', 'cuda': True, 'use_amp': True, 'pin_memory': True, 'optim': {'optimizer': 'Adam', 'init_lr': 1e-05, 'weight_decay': '1e-6'}, 'model_cgcnn': {'atom_fea_len': 64, 'h_fea_len': 512, 'n_conv': 3, 'n_h': 1}, 'graph_dataset': {'root_dir': '/media/gzl/HHDisk/lyq/cif_all/cif', 'max_num_nbr': 12, 'radius': 8, 'dmin': 0, 'step': 0.2, 'random_seed': 666}, 'dataloader': {'val_ratio': 0.05, 'num_workers': 16, 'persistent_workers': True, 'prefetch_factor': 4}, 'barlow_loss': {'embed_size': 512, 'lambd': 0.0051}, 'celoss': {'epsilon': 0.5}, 'Transformer': {'ntoken': 4021, 'd_model': 512, 'nhead': 8, 'd_hid': 512, 'nlayers': 6, 'dropout': 0.1}}
+2025-09-07 15:36:56 - INFO - pretrain_SSL - Running on: cuda:0
+2025-09-07 15:36:56 - INFO - pretrain_SSL - 已启用cuDNN benchmark优化
+2025-09-07 15:36:56 - INFO - pretrain_SSL - 开始创建数据加载器...
+2025-09-07 15:36:56 - INFO - pretrain_SSL - 数据加载器创建完成 - 训练集: 3068 batches, 验证集: 161 batches
+2025-09-07 15:36:56 - INFO - pretrain_SSL - CUDA available: True, device setting: cuda:0
+2025-09-07 15:36:56 - INFO - pretrain_SSL - CUDA device count: 2
+2025-09-07 15:36:56 - INFO - pretrain_SSL - Current GPU: NVIDIA GeForce RTX 3090
+2025-09-07 15:36:56 - INFO - pretrain_SSL - GPU memory: 23.7 GB
+2025-09-07 15:36:56 - INFO - pretrain_SSL - Transformer model device: cuda:0
+2025-09-07 15:36:56 - INFO - pretrain_SSL - Graph model device: cuda:0
+2025-09-07 15:36:56 - INFO - pretrain_SSL - Pre-trained weights not found. Training from scratch.
+2025-09-07 15:36:57 - INFO - pretrain_SSL - 已启用AMP混合精度训练
+2025-09-07 15:36:57 - INFO - pretrain_SSL - 开始第 0 个epoch的训练...
+2025-09-07 15:37:51 - INFO - pretrain_SSL - Configuration loaded: {'batch_size': 128, 'epochs': 100, 'eval_every_n_epochs': 1, 'save_every_n_epochs': 5, 'fine_tune_from': 'None', 'log_every_n_steps': 50, 'gpu': 'cuda:0', 'vocab_path': 'tokenizer/vocab_full.txt', 'cuda': True, 'use_amp': True, 'pin_memory': True, 'optim': {'optimizer': 'Adam', 'init_lr': 1e-05, 'weight_decay': '1e-6'}, 'model_cgcnn': {'atom_fea_len': 64, 'h_fea_len': 512, 'n_conv': 3, 'n_h': 1}, 'graph_dataset': {'root_dir': '/media/gzl/HHDisk/lyq/cif_all/cif', 'max_num_nbr': 12, 'radius': 8, 'dmin': 0, 'step': 0.2, 'random_seed': 666}, 'dataloader': {'val_ratio': 0.05, 'num_workers': 16, 'persistent_workers': True, 'prefetch_factor': 4}, 'barlow_loss': {'embed_size': 512, 'lambd': 0.0051}, 'celoss': {'epsilon': 0.5}, 'Transformer': {'ntoken': 4021, 'd_model': 512, 'nhead': 8, 'd_hid': 512, 'nlayers': 6, 'dropout': 0.1}}
+2025-09-07 15:37:51 - INFO - pretrain_SSL - Running on: cuda:0
+2025-09-07 15:37:51 - INFO - pretrain_SSL - 已启用cuDNN benchmark优化
+2025-09-07 15:37:51 - INFO - pretrain_SSL - 开始创建数据加载器...
+2025-09-07 15:37:51 - INFO - pretrain_SSL - 数据加载器创建完成 - 训练集: 3068 batches, 验证集: 161 batches
+2025-09-07 15:37:51 - INFO - pretrain_SSL - CUDA available: True, device setting: cuda:0
+2025-09-07 15:37:51 - INFO - pretrain_SSL - CUDA device count: 2
+2025-09-07 15:37:51 - INFO - pretrain_SSL - Current GPU: NVIDIA GeForce RTX 3090
+2025-09-07 15:37:51 - INFO - pretrain_SSL - GPU memory: 23.7 GB
+2025-09-07 15:37:51 - INFO - pretrain_SSL - Transformer model device: cuda:0
+2025-09-07 15:37:51 - INFO - pretrain_SSL - Graph model device: cuda:0
+2025-09-07 15:37:51 - INFO - pretrain_SSL - Pre-trained weights not found. Training from scratch.
+2025-09-07 15:37:51 - INFO - pretrain_SSL - 已启用AMP混合精度训练
+2025-09-07 15:37:51 - INFO - pretrain_SSL - 开始第 0 个epoch的训练...
+2025-09-07 15:38:27 - INFO - pretrain_SSL - Epoch 0, Batch 0, Loss: 530.658447, data_time=0.014s, step_time=0.528s, gpu_util=57%, gpu_mem=0.2GB
+2025-09-07 15:40:01 - INFO - pretrain_SSL - Epoch 0, Batch 50, Loss: 514.778442, data_time=0.003s, step_time=0.205s, gpu_util=81%, gpu_mem=0.3GB
+2025-09-07 15:41:54 - INFO - pretrain_SSL - Epoch 0, Batch 100, Loss: 506.805359, data_time=0.002s, step_time=0.197s, gpu_util=95%, gpu_mem=0.3GB
+2025-09-07 15:43:32 - INFO - pretrain_SSL - Epoch 0, Batch 150, Loss: 428.449799, data_time=0.002s, step_time=0.211s, gpu_util=97%, gpu_mem=0.3GB
+2025-09-07 15:45:32 - INFO - pretrain_SSL - Epoch 0, Batch 200, Loss: 369.292358, data_time=0.002s, step_time=0.206s, gpu_util=92%, gpu_mem=0.3GB
+2025-09-07 15:46:56 - INFO - pretrain_SSL - Epoch 0, Batch 250, Loss: 293.622528, data_time=0.002s, step_time=0.207s, gpu_util=95%, gpu_mem=0.3GB
+2025-09-07 15:48:32 - INFO - pretrain_SSL - Epoch 0, Batch 300, Loss: 236.951263, data_time=0.002s, step_time=0.200s, gpu_util=93%, gpu_mem=0.3GB
+2025-09-07 15:50:11 - INFO - pretrain_SSL - Epoch 0, Batch 350, Loss: 209.400299, data_time=0.002s, step_time=0.201s, gpu_util=97%, gpu_mem=0.3GB
+2025-09-07 15:52:17 - INFO - pretrain_SSL - Epoch 0, Batch 400, Loss: 204.920181, data_time=0.020s, step_time=0.231s, gpu_util=91%, gpu_mem=0.3GB
+2025-09-07 15:54:11 - INFO - pretrain_SSL - Epoch 0, Batch 450, Loss: 184.983932, data_time=0.002s, step_time=0.204s, gpu_util=94%, gpu_mem=0.3GB
+2025-09-07 15:55:47 - INFO - pretrain_SSL - Epoch 0, Batch 500, Loss: 181.725464, data_time=0.002s, step_time=0.210s, gpu_util=94%, gpu_mem=0.3GB
+2025-09-07 15:57:20 - INFO - pretrain_SSL - Epoch 0, Batch 550, Loss: 180.070572, data_time=0.002s, step_time=0.199s, gpu_util=97%, gpu_mem=0.3GB
+2025-09-07 15:59:03 - INFO - pretrain_SSL - Epoch 0, Batch 600, Loss: 178.566895, data_time=0.003s, step_time=0.205s, gpu_util=95%, gpu_mem=0.3GB
+2025-09-07 16:00:55 - INFO - pretrain_SSL - Epoch 0, Batch 650, Loss: 171.382050, data_time=0.003s, step_time=0.206s, gpu_util=94%, gpu_mem=0.3GB
+2025-09-07 16:02:39 - INFO - pretrain_SSL - Epoch 0, Batch 700, Loss: 163.989700, data_time=0.002s, step_time=0.204s, gpu_util=95%, gpu_mem=0.3GB
+2025-09-07 16:04:10 - INFO - pretrain_SSL - Epoch 0, Batch 750, Loss: 160.511154, data_time=0.002s, step_time=0.199s, gpu_util=93%, gpu_mem=0.3GB
+2025-09-07 16:06:22 - INFO - pretrain_SSL - Epoch 0, Batch 800, Loss: 159.954956, data_time=0.022s, step_time=0.230s, gpu_util=94%, gpu_mem=0.3GB
+2025-09-07 16:07:59 - INFO - pretrain_SSL - Epoch 0, Batch 850, Loss: 159.350021, data_time=0.002s, step_time=0.198s, gpu_util=96%, gpu_mem=0.3GB
+2025-09-07 16:09:33 - INFO - pretrain_SSL - Epoch 0, Batch 900, Loss: 156.656982, data_time=0.003s, step_time=0.198s, gpu_util=95%, gpu_mem=0.3GB
+2025-09-07 16:11:22 - INFO - pretrain_SSL - Epoch 0, Batch 950, Loss: 153.723022, data_time=0.002s, step_time=0.200s, gpu_util=96%, gpu_mem=0.3GB
+2025-09-07 16:12:58 - INFO - pretrain_SSL - Epoch 0, Batch 1000, Loss: 155.797852, data_time=0.002s, step_time=0.210s, gpu_util=96%, gpu_mem=0.3GB
+2025-09-07 16:14:37 - INFO - pretrain_SSL - Epoch 0, Batch 1050, Loss: 149.015045, data_time=0.002s, step_time=0.207s, gpu_util=97%, gpu_mem=0.3GB
+2025-09-07 16:16:15 - INFO - pretrain_SSL - Epoch 0, Batch 1100, Loss: 142.239746, data_time=0.002s, step_time=0.199s, gpu_util=94%, gpu_mem=0.3GB
+2025-09-07 16:17:55 - INFO - pretrain_SSL - Epoch 0, Batch 1150, Loss: 138.289825, data_time=0.002s, step_time=0.203s, gpu_util=95%, gpu_mem=0.3GB
+2025-09-07 16:19:59 - INFO - pretrain_SSL - Epoch 0, Batch 1200, Loss: 132.859482, data_time=0.021s, step_time=0.237s, gpu_util=48%, gpu_mem=0.3GB
+2025-09-07 16:21:48 - INFO - pretrain_SSL - Epoch 0, Batch 1250, Loss: 129.922546, data_time=0.003s, step_time=0.198s, gpu_util=97%, gpu_mem=0.3GB
+2025-09-07 16:23:39 - INFO - pretrain_SSL - Epoch 0, Batch 1300, Loss: 127.322418, data_time=0.002s, step_time=0.204s, gpu_util=93%, gpu_mem=0.3GB
+2025-09-07 16:25:17 - INFO - pretrain_SSL - Epoch 0, Batch 1350, Loss: 123.814995, data_time=0.003s, step_time=0.202s, gpu_util=95%, gpu_mem=0.3GB
+2025-09-07 16:26:47 - INFO - pretrain_SSL - Epoch 0, Batch 1400, Loss: 122.453728, data_time=0.002s, step_time=0.200s, gpu_util=92%, gpu_mem=0.3GB
+2025-09-07 16:28:36 - INFO - pretrain_SSL - Epoch 0, Batch 1450, Loss: 123.834587, data_time=0.002s, step_time=0.197s, gpu_util=97%, gpu_mem=0.3GB
+2025-09-07 16:30:18 - INFO - pretrain_SSL - Epoch 0, Batch 1500, Loss: 121.957634, data_time=0.002s, step_time=0.201s, gpu_util=97%, gpu_mem=0.3GB
+2025-09-07 16:32:02 - INFO - pretrain_SSL - Epoch 0, Batch 1550, Loss: 119.614807, data_time=0.002s, step_time=0.206s, gpu_util=95%, gpu_mem=0.3GB
+2025-09-07 16:34:08 - INFO - pretrain_SSL - Epoch 0, Batch 1600, Loss: 120.619553, data_time=0.022s, step_time=0.226s, gpu_util=69%, gpu_mem=0.3GB
+2025-09-07 16:35:45 - INFO - pretrain_SSL - Epoch 0, Batch 1650, Loss: 118.966713, data_time=0.002s, step_time=0.200s, gpu_util=93%, gpu_mem=0.3GB
+2025-09-07 16:37:26 - INFO - pretrain_SSL - Epoch 0, Batch 1700, Loss: 120.168625, data_time=0.002s, step_time=0.196s, gpu_util=97%, gpu_mem=0.3GB
+2025-09-07 16:40:10 - INFO - pretrain_SSL - Configuration loaded: {'batch_size': 256, 'epochs': 50, 'eval_every_n_epochs': 1, 'save_every_n_epochs': 5, 'fine_tune_from': 'None', 'log_every_n_steps': 50, 'gpu': 'cuda:0', 'vocab_path': 'tokenizer/vocab_full.txt', 'cuda': True, 'use_amp': True, 'pin_memory': True, 'optim': {'optimizer': 'Adam', 'init_lr': 1e-05, 'weight_decay': '1e-6'}, 'model_cgcnn': {'atom_fea_len': 64, 'h_fea_len': 512, 'n_conv': 3, 'n_h': 1}, 'graph_dataset': {'root_dir': '/media/gzl/HHDisk/lyq/cif_all/cif', 'max_num_nbr': 12, 'radius': 8, 'dmin': 0, 'step': 0.2, 'random_seed': 666}, 'dataloader': {'val_ratio': 0.05, 'num_workers': 16, 'persistent_workers': True, 'prefetch_factor': 4}, 'barlow_loss': {'embed_size': 512, 'lambd': 0.0051}, 'celoss': {'epsilon': 0.5}, 'Transformer': {'ntoken': 4021, 'd_model': 512, 'nhead': 8, 'd_hid': 512, 'nlayers': 6, 'dropout': 0.1}}
+2025-09-07 16:40:10 - INFO - pretrain_SSL - Running on: cuda:0
+2025-09-07 16:40:10 - INFO - pretrain_SSL - 已启用cuDNN benchmark优化
+2025-09-07 16:40:10 - INFO - pretrain_SSL - 开始创建数据加载器...
+2025-09-07 16:40:10 - INFO - pretrain_SSL - 数据加载器创建完成 - 训练集: 1534 batches, 验证集: 80 batches
+2025-09-07 16:40:10 - INFO - pretrain_SSL - CUDA available: True, device setting: cuda:0
+2025-09-07 16:40:10 - INFO - pretrain_SSL - CUDA device count: 2
+2025-09-07 16:40:10 - INFO - pretrain_SSL - Current GPU: NVIDIA GeForce RTX 3090
+2025-09-07 16:40:10 - INFO - pretrain_SSL - GPU memory: 23.7 GB
+2025-09-07 16:40:10 - INFO - pretrain_SSL - Transformer model device: cuda:0
+2025-09-07 16:40:10 - INFO - pretrain_SSL - Graph model device: cuda:0
+2025-09-07 16:40:10 - INFO - pretrain_SSL - Pre-trained weights not found. Training from scratch.
+2025-09-07 16:40:10 - INFO - pretrain_SSL - 已启用AMP混合精度训练
+2025-09-07 16:40:10 - INFO - pretrain_SSL - 开始第 0 个epoch的训练...
+2025-09-07 16:41:14 - INFO - pretrain_SSL - Epoch 0, Batch 0, Loss: 518.419373, data_time=0.016s, step_time=0.701s, gpu_util=66%, gpu_mem=0.2GB
+2025-09-07 16:42:47 - INFO - pretrain_SSL - Configuration loaded: {'batch_size': 256, 'epochs': 50, 'eval_every_n_epochs': 1, 'save_every_n_epochs': 5, 'fine_tune_from': 'None', 'log_every_n_steps': 50, 'gpu': 'cuda:0', 'vocab_path': 'tokenizer/vocab_full.txt', 'cuda': True, 'use_amp': True, 'pin_memory': True, 'optim': {'optimizer': 'Adam', 'init_lr': 1e-05, 'weight_decay': '1e-6'}, 'model_cgcnn': {'atom_fea_len': 64, 'h_fea_len': 512, 'n_conv': 3, 'n_h': 1}, 'graph_dataset': {'root_dir': '/media/gzl/HHDisk/lyq/cif_all/cif', 'max_num_nbr': 12, 'radius': 8, 'dmin': 0, 'step': 0.2, 'random_seed': 666}, 'dataloader': {'val_ratio': 0.05, 'num_workers': 16, 'persistent_workers': True, 'prefetch_factor': 4}, 'barlow_loss': {'embed_size': 512, 'lambd': 0.0051}, 'celoss': {'epsilon': 0.5}, 'Transformer': {'ntoken': 4021, 'd_model': 512, 'nhead': 8, 'd_hid': 512, 'nlayers': 6, 'dropout': 0.1}}
+2025-09-07 16:42:47 - INFO - pretrain_SSL - Running on: cuda:0
+2025-09-07 16:42:47 - INFO - pretrain_SSL - 已启用cuDNN benchmark优化
+2025-09-07 16:42:47 - INFO - pretrain_SSL - 开始创建数据加载器...
+2025-09-07 16:42:47 - INFO - pretrain_SSL - 数据加载器创建完成 - 训练集: 1534 batches, 验证集: 80 batches
+2025-09-07 16:42:47 - INFO - pretrain_SSL - CUDA available: True, device setting: cuda:0
+2025-09-07 16:42:47 - INFO - pretrain_SSL - CUDA device count: 2
+2025-09-07 16:42:47 - INFO - pretrain_SSL - Current GPU: NVIDIA GeForce RTX 3090
+2025-09-07 16:42:47 - INFO - pretrain_SSL - GPU memory: 23.7 GB
+2025-09-07 16:42:48 - INFO - pretrain_SSL - Transformer model device: cuda:0
+2025-09-07 16:42:48 - INFO - pretrain_SSL - Graph model device: cuda:0
+2025-09-07 16:42:48 - INFO - pretrain_SSL - Pre-trained weights not found. Training from scratch.
+2025-09-07 16:42:48 - INFO - pretrain_SSL - 已启用AMP混合精度训练
+2025-09-07 16:42:48 - INFO - pretrain_SSL - 开始第 0 个epoch的训练...
+2025-09-07 16:43:52 - INFO - pretrain_SSL - Epoch 0, Batch 0, Loss: 523.249268, data_time=0.015s, step_time=0.630s, gpu_util=80%, gpu_mem=0.2GB
+2025-09-07 16:47:11 - INFO - pretrain_SSL - Epoch 0, Batch 50, Loss: 495.314850, data_time=0.004s, step_time=0.396s, gpu_util=100%, gpu_mem=0.3GB
+2025-09-07 16:49:52 - INFO - pretrain_SSL - Configuration loaded: {'batch_size': 256, 'epochs': 50, 'eval_every_n_epochs': 1, 'save_every_n_epochs': 5, 'fine_tune_from': 'None', 'log_every_n_steps': 50, 'gpu': 'cuda:0', 'vocab_path': 'tokenizer/vocab_full.txt', 'cuda': True, 'use_amp': True, 'pin_memory': True, 'optim': {'optimizer': 'Adam', 'init_lr': 1e-05, 'weight_decay': '1e-6'}, 'model_cgcnn': {'atom_fea_len': 64, 'h_fea_len': 512, 'n_conv': 3, 'n_h': 1}, 'graph_dataset': {'root_dir': '/media/gzl/HHDisk/lyq/cif_all/cif', 'max_num_nbr': 12, 'radius': 8, 'dmin': 0, 'step': 0.2, 'random_seed': 666}, 'dataloader': {'val_ratio': 0.05, 'num_workers': 32, 'persistent_workers': True, 'prefetch_factor': 8}, 'barlow_loss': {'embed_size': 512, 'lambd': 0.0051}, 'celoss': {'epsilon': 0.5}, 'Transformer': {'ntoken': 4021, 'd_model': 512, 'nhead': 8, 'd_hid': 512, 'nlayers': 6, 'dropout': 0.1}}
+2025-09-07 16:49:52 - INFO - pretrain_SSL - Running on: cuda:0
+2025-09-07 16:49:52 - INFO - pretrain_SSL - 已启用cuDNN benchmark优化
+2025-09-07 16:49:52 - INFO - pretrain_SSL - 开始创建数据加载器...
+2025-09-07 16:49:52 - INFO - pretrain_SSL - 数据加载器创建完成 - 训练集: 1534 batches, 验证集: 80 batches
+2025-09-07 16:49:52 - INFO - pretrain_SSL - CUDA available: True, device setting: cuda:0
+2025-09-07 16:49:52 - INFO - pretrain_SSL - CUDA device count: 2
+2025-09-07 16:49:52 - INFO - pretrain_SSL - Current GPU: NVIDIA GeForce RTX 3090
+2025-09-07 16:49:52 - INFO - pretrain_SSL - GPU memory: 23.7 GB
+2025-09-07 16:49:53 - INFO - pretrain_SSL - Transformer model device: cuda:0
+2025-09-07 16:49:53 - INFO - pretrain_SSL - Graph model device: cuda:0
+2025-09-07 16:49:53 - INFO - pretrain_SSL - Pre-trained weights not found. Training from scratch.
+2025-09-07 16:49:53 - INFO - pretrain_SSL - 已启用AMP混合精度训练
+2025-09-07 16:49:53 - INFO - pretrain_SSL - 开始第 0 个epoch的训练...
+2025-09-07 16:51:31 - INFO - pretrain_SSL - Epoch 0, Batch 0, Loss: 519.447144, data_time=0.016s, step_time=0.876s, gpu_util=57%, gpu_mem=0.2GB
+2025-09-07 16:54:30 - INFO - pretrain_SSL - Epoch 0, Batch 50, Loss: 501.737854, data_time=0.004s, step_time=0.420s, gpu_util=100%, gpu_mem=0.3GB
+2025-09-07 16:55:30 - INFO - pretrain_SSL - Configuration loaded: {'batch_size': 256, 'epochs': 50, 'eval_every_n_epochs': 1, 'save_every_n_epochs': 5, 'fine_tune_from': 'None', 'log_every_n_steps': 50, 'gpu': 'cuda:0', 'vocab_path': 'tokenizer/vocab_full.txt', 'cuda': True, 'use_amp': True, 'pin_memory': True, 'optim': {'optimizer': 'Adam', 'init_lr': 1e-05, 'weight_decay': '1e-6'}, 'model_cgcnn': {'atom_fea_len': 64, 'h_fea_len': 512, 'n_conv': 3, 'n_h': 1}, 'graph_dataset': {'root_dir': '/media/gzl/HHDisk/lyq/cif_all/cif', 'max_num_nbr': 12, 'radius': 8, 'dmin': 0, 'step': 0.2, 'random_seed': 666}, 'dataloader': {'val_ratio': 0.05, 'num_workers': 32, 'persistent_workers': True, 'prefetch_factor': 32}, 'barlow_loss': {'embed_size': 512, 'lambd': 0.0051}, 'celoss': {'epsilon': 0.5}, 'Transformer': {'ntoken': 4021, 'd_model': 512, 'nhead': 8, 'd_hid': 512, 'nlayers': 6, 'dropout': 0.1}}
+2025-09-07 16:55:30 - INFO - pretrain_SSL - Running on: cuda:0
+2025-09-07 16:55:30 - INFO - pretrain_SSL - 已启用cuDNN benchmark优化
+2025-09-07 16:55:30 - INFO - pretrain_SSL - 开始创建数据加载器...
+2025-09-07 16:55:30 - INFO - pretrain_SSL - 数据加载器创建完成 - 训练集: 1534 batches, 验证集: 80 batches
+2025-09-07 16:55:30 - INFO - pretrain_SSL - CUDA available: True, device setting: cuda:0
+2025-09-07 16:55:30 - INFO - pretrain_SSL - CUDA device count: 2
+2025-09-07 16:55:30 - INFO - pretrain_SSL - Current GPU: NVIDIA GeForce RTX 3090
+2025-09-07 16:55:30 - INFO - pretrain_SSL - GPU memory: 23.7 GB
+2025-09-07 16:55:31 - INFO - pretrain_SSL - Transformer model device: cuda:0
+2025-09-07 16:55:31 - INFO - pretrain_SSL - Graph model device: cuda:0
+2025-09-07 16:55:31 - INFO - pretrain_SSL - Pre-trained weights not found. Training from scratch.
+2025-09-07 16:55:31 - INFO - pretrain_SSL - 已启用AMP混合精度训练
+2025-09-07 16:55:31 - INFO - pretrain_SSL - 开始第 0 个epoch的训练...
+2025-09-07 16:57:20 - INFO - pretrain_SSL - Epoch 0, Batch 0, Loss: 524.145142, data_time=0.016s, step_time=1.077s, gpu_util=94%, gpu_mem=0.2GB
+2025-09-07 17:00:18 - INFO - pretrain_SSL - Epoch 0, Batch 50, Loss: 510.226501, data_time=0.005s, step_time=0.451s, gpu_util=81%, gpu_mem=0.3GB
+2025-09-07 17:04:01 - INFO - pretrain_SSL - Epoch 0, Batch 100, Loss: 470.513245, data_time=0.010s, step_time=0.427s, gpu_util=98%, gpu_mem=0.3GB
+2025-09-07 17:06:16 - INFO - pretrain_SSL - Configuration loaded: {'batch_size': 256, 'epochs': 50, 'eval_every_n_epochs': 2, 'save_every_n_epochs': 5, 'fine_tune_from': 'None', 'log_every_n_steps': 50, 'gpu': 'cuda:0', 'vocab_path': 'tokenizer/vocab_full.txt', 'cuda': True, 'use_amp': True, 'pin_memory': True, 'optim': {'optimizer': 'Adam', 'init_lr': 1e-05, 'weight_decay': '1e-6'}, 'model_cgcnn': {'atom_fea_len': 64, 'h_fea_len': 512, 'n_conv': 3, 'n_h': 1}, 'graph_dataset': {'root_dir': '/media/gzl/HHDisk/lyq/cif_all/cif', 'max_num_nbr': 12, 'radius': 8, 'dmin': 0, 'step': 0.2, 'random_seed': 666}, 'dataloader': {'val_ratio': 0.05, 'num_workers': 64, 'persistent_workers': True, 'prefetch_factor': 16}, 'barlow_loss': {'embed_size': 512, 'lambd': 0.0051}, 'celoss': {'epsilon': 0.5}, 'Transformer': {'ntoken': 4021, 'd_model': 512, 'nhead': 8, 'd_hid': 512, 'nlayers': 6, 'dropout': 0.1}}
+2025-09-07 17:06:16 - INFO - pretrain_SSL - Running on: cuda:0
+2025-09-07 17:06:16 - INFO - pretrain_SSL - 已启用cuDNN benchmark优化
+2025-09-07 17:06:16 - INFO - pretrain_SSL - 开始创建数据加载器...
+2025-09-07 17:06:16 - INFO - pretrain_SSL - 数据加载器创建完成 - 训练集: 1534 batches, 验证集: 80 batches
+2025-09-07 17:06:16 - INFO - pretrain_SSL - CUDA available: True, device setting: cuda:0
+2025-09-07 17:06:16 - INFO - pretrain_SSL - CUDA device count: 2
+2025-09-07 17:06:16 - INFO - pretrain_SSL - Current GPU: NVIDIA GeForce RTX 3090
+2025-09-07 17:06:16 - INFO - pretrain_SSL - GPU memory: 23.7 GB
+2025-09-07 17:06:16 - INFO - pretrain_SSL - Transformer model device: cuda:0
+2025-09-07 17:06:16 - INFO - pretrain_SSL - Graph model device: cuda:0
+2025-09-07 17:06:16 - INFO - pretrain_SSL - Pre-trained weights not found. Training from scratch.
+2025-09-07 17:06:16 - INFO - pretrain_SSL - 已启用AMP混合精度训练
+2025-09-07 17:06:16 - INFO - pretrain_SSL - 开始第 0 个epoch的训练...

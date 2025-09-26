@@ -1,9 +1,5 @@
 ### Transformer 微调（教学友好版）快速上手
 
-本指南配套以下文件：
-- `transformer_tutorial.py`：batch_first 版本的 Transformer 与回归头，中文注释
-- `finetune_transformer_tutorial.py`：训练/验证/测试脚本（细分步骤+中文注释）
- 
 #### 一、环境准备
 - 需要安装 PyTorch、transformers（为分词器）、tensorboard
 
