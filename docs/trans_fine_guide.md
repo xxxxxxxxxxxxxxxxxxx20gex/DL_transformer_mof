@@ -20,15 +20,8 @@ python finetune_transformer.py
 - 下游：`TransformerRegressorTutorial` 取序列首位特征（类似 [CLS]）进入回归头
 - 训练：MSELoss，评估 MAE，保存最佳权重
 
-#### 五、常见问题
-- 若出现位置维度不匹配，请确认 batch_first 版本位置编码是否生效
-- 若显存不足，适当调小 `batch_size` 或 `nlayers`/`d_model`
-
-
 # 使用 TensorBoard
 tensorboard --logdir training_results/finetuning/Transformer
 
-# 或查看文本日志
-python check_logs.py
 
 
