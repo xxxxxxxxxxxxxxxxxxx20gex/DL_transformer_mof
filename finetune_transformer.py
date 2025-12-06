@@ -35,20 +35,48 @@ def _parse_task_name(data_name: str) -> str:
     else:
         return data_name
 
+def _get_next_experiment_number(base_dir: Path) -> int:
+    """获取下一个实验编号"""
+    if not base_dir.exists():
+        return 1
+    
+    # 查找所有实验目录，提取编号
+    existing_dirs = [d for d in base_dir.iterdir() if d.is_dir()]
+    numbers = []
+    
+    for d in existing_dirs:
+        # 尝试从目录名提取编号（格式：001-...）
+        name = d.name
+        if '-' in name:
+            try:
+                num = int(name.split('-')[0])
+                numbers.append(num)
+            except ValueError:
+                continue
+    
+    return max(numbers) + 1 if numbers else 1
 
-def _parse_finetuning_info(config) -> Tuple[str, str]:
-    """解析微调源和预训练方法信息"""
-    if config['fine_tune_from'] == 'scratch':
-        return 'scratch', 'scratch'
-    else:
-        ftf = config['fine_tune_from'].split('/')[-1]
-        ptw = config['trained_with']
-        return ftf, ptw
 
-def _create_log_directory(ptw: str, task_name: str, seed: int) -> str:
-    """创建训练日志目录"""
-    timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
-    log_dir = Path('training_results/finetuning/Transformer') / f'Trans_{ptw}_{task_name}_{seed}_{timestamp}'
+def _create_log_directory(task_name: str, seed: int) -> str:
+    """
+    创建训练日志目录
+    
+    目录命名格式: 序号-时间-任务名称
+    例如: 001-20251206_124420-hMOF_CO2_0.5_seed1
+    """
+    base_dir = Path('training_results/finetuning/Transformer')
+    base_dir.mkdir(parents=True, exist_ok=True)
+    
+    # 获取实验序号
+    exp_number = _get_next_experiment_number(base_dir)
+    
+    # 格式化时间戳（更紧凑的格式）
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    
+    # 创建目录名：序号-时间-任务名_种子
+    dir_name = f'{exp_number:03d}-{timestamp}-{task_name}_seed{seed}'
+    log_dir = base_dir / dir_name
+    
     log_dir.mkdir(parents=True, exist_ok=True)
     return str(log_dir)
 
@@ -291,6 +319,7 @@ class FineTune(object):
                 loss = self.criterion(output, target_var)
 
                 mae_error = mae(self.normalizer.denorm(output.data.cpu()), target)
+                
                 losses.update(loss.data.cpu().item(), target.size(0))
                 mae_errors.update(mae_error, target.size(0))
 
@@ -365,11 +394,8 @@ if __name__ == "__main__":
     # 解析任务名称
     task_name = _parse_task_name(config['dataset']['data_name'])
 
-    # 解析微调源和预训练方法
-    ftf, ptw = _parse_finetuning_info(config)
-
-    # 创建日志目录
-    log_dir = _create_log_directory(ptw, task_name, config['dataloader']['randomSeed'])
+    # 创建日志目录（新格式：序号-时间-任务名）
+    log_dir = _create_log_directory(task_name, config['dataloader']['randomSeed'])
     log_file = str(Path(log_dir) / 'training.log')
     
     # 配置logger：同时输出到控制台和文件
@@ -388,12 +414,12 @@ if __name__ == "__main__":
     fine_tune.train()
     loss, metric = fine_tune.test()
 
-    # Save results
+    # 保存结果摘要（目录名已包含完整信息，简化文件名）
     seed = config['dataloader']['randomSeed']
-    fn = f'Trans_{ptw}_{task_name}_{seed}.csv'
-    logger.info(f"Saving results to: {fn}")
-    df = pd.DataFrame([[loss, metric.item()]])
+    results_file = 'final_results.csv'
+    logger.info(f"Saving results to: {results_file}")
+    df = pd.DataFrame([[loss, metric.item()]], columns=['Loss', 'MAE'])
     df.to_csv(
-        str(Path(log_dir) / fn),
-        mode='a', index=False, header=False
+        str(Path(log_dir) / results_file),
+        index=False
     )
