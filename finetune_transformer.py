@@ -411,8 +411,18 @@ if __name__ == "__main__":
     logger.info(f"Loaded configuration: {config}")
 
     fine_tune = FineTune(config, log_dir, logger)
+
+    start_time = time.time()
+    logger.info("Training started")
     fine_tune.train()
+    elapsed_time = time.time() - start_time
+    logger.info(f"Training completed in {elapsed_time/60:.2f} minutes")
+
+    start_time = time.time()
+    logger.info("Testing started")
     loss, metric = fine_tune.test()
+    elapsed_time = time.time() - start_time
+    logger.info(f"Testing completed in {elapsed_time/60:.2f} minutes")
 
     # 保存结果摘要（目录名已包含完整信息，简化文件名）
     seed = config['dataloader']['randomSeed']
