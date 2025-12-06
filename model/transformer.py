@@ -1,10 +1,14 @@
 """
-Transformer 与回归头（原版）
+Transformer 与回归头（微调版本）
 
-给初学者的阅读提示：
-- 该文件实现了位置编码 `PositionalEncoding`、Transformer 主干 `Transformer`、预训练模型 `TransformerPretrain`，以及下游回归封装 `TransformerRegressor`。
-- 注意：当前 `PositionalEncoding` 的实现默认输入张量形状为 [seq_len, batch, d_model]，而本项目的 `TransformerEncoderLayer` 使用了 `batch_first=True`（期望 [batch, seq_len, d_model]）。
-  这会导致位置编码加在错误的维度上，推荐使用教学版 `model/transformer_tutorial.py` 里的 batch_first 版本以避免形状混淆。
+本文件实现了用于微调的Transformer模型：
+- PositionalEncoding: 位置编码
+- Transformer: Transformer主干网络
+- regressoionHead: 回归头
+- TransformerRegressor: 完整的微调模型（Transformer + 回归头）
+
+注意：当前 `PositionalEncoding` 的实现默认输入张量形状为 [seq_len, batch, d_model]，
+而 `TransformerEncoderLayer` 使用了 `batch_first=True`（期望 [batch, seq_len, d_model]）。
 """
 
 import pandas as pd
@@ -16,7 +20,6 @@ from typing import Tuple
 from torch import nn, Tensor
 import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
-from model.GSOP import GSoP
 
 
 class PositionalEncoding(nn.Module):
@@ -100,87 +103,29 @@ class Transformer(nn.Module):
         return output
 
 class TransformerRegressor(nn.Module):
-
-    def __init__(self, transformer, d_model: int, use_gsoP: bool = False, gsoP_mode: str = '1', gsoP_att_dim: int = 128):
+    """
+    Transformer微调模型：结合Transformer主干和回归头
+    
+    输入：token id序列
+    输出：回归预测值（标量）
+    """
+    def __init__(self, transformer, d_model: int):
         super().__init__()
         self.d_model = d_model
         self.transformer = transformer
-        self.use_gsoP = use_gsoP
         self.regressionHead = regressoionHead(d_model)
-        
-        if self.use_gsoP:
-            # GSoP需要4D输入 [B, C, H, W]
-            # 我们将cls token从 [B, 1, d_model] reshape为 [B, d_model, 1, 1] 以便GSoP处理
-            self.gsoP = GSoP(d_model, attention=gsoP_mode, att_dim=gsoP_att_dim)
-
-        # self.init_weights()
-
-    def init_weights(self) -> None:
-        # initrange = 0.1
-        # self.encoder.weight.data.uniform_(-initrange, initrange)
-        nn.init.xavier_normal_(self.regressionHead.weight)
 
     def forward(self, src: Tensor) -> Tensor:
-        """将 Transformer 序列特征的第一个位置作为全局表征，送入回归头输出标量。
-
-        注意：若使用 batch_first=True 的实现，对应切片应为 [batch, 0:1, :]。
+        """
+        前向传播：提取CLS token特征并通过回归头预测
+        
+        Args:
+            src: Tensor, shape [batch, seq_len] - token id序列
+            
+        Returns:
+            output: Tensor, shape [batch, 1] - 回归预测值
         """
         output = self.transformer(src)
         cls_token = output[:, 0:1, :]  # [batch, 1, d_model]
-        
-        if self.use_gsoP:
-            batch_size = cls_token.shape[0]
-            # Reshape: [batch, 1, d_model] -> [batch, d_model, 1, 1]
-            # 将序列维度的特征看作"通道维"，GSoP可以学习通道间的关系
-            cls_token_4d = cls_token.squeeze(1).unsqueeze(-1).unsqueeze(-1)  # [batch, d_model, 1, 1]
-
-            # Apply GSoP attention - 增强特征表示
-            cls_token_4d = self.gsoP(cls_token_4d)  # [batch, d_model, 1, 1]
-            
-            # Reshape back: [batch, d_model, 1, 1] -> [batch, 1, d_model]
-            cls_token = cls_token_4d.squeeze(-1).squeeze(-1).unsqueeze(1)  # [batch, 1, d_model]
-        
         output = self.regressionHead(cls_token)
         return output
-
-def generate_square_subsequent_mask(sz: int) -> Tensor:
-    """Generates an upper-triangular matrix of -inf, with zeros on diag."""
-    return torch.triu(torch.ones(sz, sz) * float('-inf'), diagonal=1)
-
-class TransformerPretrain(nn.Module):
-
-    def __init__(self, ntoken: int, d_model: int, nhead: int, d_hid: int,
-                 nlayers: int, dropout: float = 0.1):
-        super().__init__()
-        self.model_type = 'Transformer'
-        self.pos_encoder = PositionalEncoding(d_model, dropout)
-        encoder_layers = TransformerEncoderLayer(d_model, nhead, d_hid, dropout, batch_first=True)
-        self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
-        self.token_encoder = nn.Embedding(ntoken, d_model)
-        self.d_model = d_model
-        self.proj_out = nn.Sequential(
-            nn.Linear(d_model,d_model),
-            nn.Softplus(),
-            nn.Linear(d_model, d_model) 
-        )
-        self.init_weights()
-
-    def init_weights(self) -> None:
-        nn.init.xavier_normal_(self.token_encoder.weight)
-
-    def forward(self, src: Tensor) -> Tensor:
-        """
-        Args:
-            src: Tensor, shape [seq_len, batch_size]
-            src_mask: Tensor, shape [seq_len, seq_len]
-
-        Returns:
-            output Tensor of shape [seq_len, batch_size, ntoken]
-        """
-        src = self.token_encoder(src) * math.sqrt(self.d_model)
-        src = self.pos_encoder(src)
-        output = self.transformer_encoder(src)
-        output_embed = output[:, 0:1, :]
-        output_embed_proj = output_embed.squeeze(1)
-        output_embed_proj = self.proj_out(output_embed_proj)
-        return output_embed_proj

@@ -140,8 +140,8 @@ class FineTune(object):
         base_params = []
         
         for name, param in model.named_parameters():
-            # 识别回归头、GSoP层和其他新添加的层
-            if new_layer_identifier in name or 'gsoP' in name.lower():
+            # 识别回归头和其他新添加的层
+            if new_layer_identifier in name or 'regressionhead' in name.lower():
                 self.logger.info(f"New layer: {name}")
                 new_layer_params.append(param)
             else:
@@ -213,18 +213,10 @@ class FineTune(object):
 
         model_transformer = self._load_pre_trained_weights(self.transformer)
         
-        # Get GSoP configuration from config file, default to False if not present
-        gsoP_config = self.config.get('GSoP', {})
-        use_gsoP = gsoP_config.get('use_gsoP', False)
-        gsoP_mode = gsoP_config.get('mode', '1')
-        gsoP_att_dim = gsoP_config.get('att_dim', 128)
-        
+        # 构建微调模型（Transformer + 回归头）
         model = TransformerRegressor(
             transformer=model_transformer, 
-            d_model=self.config['Transformer']['d_model'],
-            use_gsoP=use_gsoP,
-            gsoP_mode=gsoP_mode,
-            gsoP_att_dim=gsoP_att_dim
+            d_model=self.config['Transformer']['d_model']
         ).to(self.device)
         
         # 分离新层参数和基础参数，用于差异化学习率
