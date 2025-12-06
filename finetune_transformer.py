@@ -1,6 +1,6 @@
 
 from tokenizer.mof_tokenizer import MOFTokenizer
-from model.transformer import TransformerRegressor, Transformer
+from model.transformer import TransformerRegressor, Transformer, TransformerRegressorWithBDC
 from model.utils import *
 from torch.utils.data import DataLoader
 import time
@@ -242,10 +242,22 @@ class FineTune(object):
         model_transformer = self._load_pre_trained_weights(self.transformer)
         
         # 构建微调模型（Transformer + 回归头）
-        model = TransformerRegressor(
-            transformer=model_transformer, 
-            d_model=self.config['Transformer']['d_model']
-        ).to(self.device)
+        # 根据配置选择是否使用BDC模块
+        use_bdc = self.config.get('use_bdc', False)
+        if use_bdc:
+            reduce_dim = self.config.get('bdc_reduce_dim', None)
+            self.logger.info(f"Using BDC module (reduce_dim={reduce_dim})")
+            model = TransformerRegressorWithBDC(
+                transformer=model_transformer, 
+                d_model=self.config['Transformer']['d_model'],
+                reduce_dim=reduce_dim
+            ).to(self.device)
+        else:
+            self.logger.info("Using standard regression head")
+            model = TransformerRegressor(
+                transformer=model_transformer, 
+                d_model=self.config['Transformer']['d_model']
+            ).to(self.device)
         
         # 分离新层参数和基础参数，用于差异化学习率
         new_layer_params, base_params = self._separate_model_parameters(model, 'fc_out')

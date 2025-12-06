@@ -18,7 +18,7 @@
 
 1. **实验1（基线）**：在batch size=128、学习率=5e-5、30个epochs的条件下，模型取得了Validation MAE=0.529 mol/kg，Test MAE=0.520 mol/kg的性能。
 
-2. 加入了新的模块 BDC 分支 sft-1 
+2. 加入了新的模块 BDC 分支 sft-2
 
 
 ### 实验配置说明
