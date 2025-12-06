@@ -16,6 +16,7 @@ from typing import Tuple
 from torch import nn, Tensor
 import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
+from model.GSOP import GSoP
 
 
 class PositionalEncoding(nn.Module):
@@ -100,11 +101,17 @@ class Transformer(nn.Module):
 
 class TransformerRegressor(nn.Module):
 
-    def __init__(self, transformer, d_model: int):
+    def __init__(self, transformer, d_model: int, use_gsoP: bool = False, gsoP_mode: str = '1', gsoP_att_dim: int = 128):
         super().__init__()
         self.d_model = d_model
         self.transformer = transformer
+        self.use_gsoP = use_gsoP
         self.regressionHead = regressoionHead(d_model)
+        
+        if self.use_gsoP:
+            # GSoP需要4D输入 [B, C, H, W]
+            # 我们将cls token从 [B, 1, d_model] reshape为 [B, d_model, 1, 1] 以便GSoP处理
+            self.gsoP = GSoP(d_model, attention=gsoP_mode, att_dim=gsoP_att_dim)
 
         # self.init_weights()
 
@@ -119,7 +126,21 @@ class TransformerRegressor(nn.Module):
         注意：若使用 batch_first=True 的实现，对应切片应为 [batch, 0:1, :]。
         """
         output = self.transformer(src)
-        output = self.regressionHead(output[:, 0:1, :])
+        cls_token = output[:, 0:1, :]  # [batch, 1, d_model]
+        
+        if self.use_gsoP:
+            batch_size = cls_token.shape[0]
+            # Reshape: [batch, 1, d_model] -> [batch, d_model, 1, 1]
+            # 将序列维度的特征看作"通道维"，GSoP可以学习通道间的关系
+            cls_token_4d = cls_token.squeeze(1).unsqueeze(-1).unsqueeze(-1)  # [batch, d_model, 1, 1]
+
+            # Apply GSoP attention - 增强特征表示
+            cls_token_4d = self.gsoP(cls_token_4d)  # [batch, d_model, 1, 1]
+            
+            # Reshape back: [batch, d_model, 1, 1] -> [batch, 1, d_model]
+            cls_token = cls_token_4d.squeeze(-1).squeeze(-1).unsqueeze(1)  # [batch, 1, d_model]
+        
+        output = self.regressionHead(cls_token)
         return output
 
 def generate_square_subsequent_mask(sz: int) -> Tensor:

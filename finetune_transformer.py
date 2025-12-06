@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import logging
 from pathlib import Path
+from typing import Tuple, Optional
 
 import torch
 import torch.nn as nn
@@ -25,7 +26,7 @@ warnings.warn("deprecated", UserWarning)
 warnings.warn("deprecated", FutureWarning)
 
 
-def _parse_task_name(data_name):
+def _parse_task_name(data_name: str) -> str:
     """解析数据集名称，提取任务名称"""
     if 'hMOF' in data_name:
         return data_name  # 保留完整的 hMOF 名称包括压力信息
@@ -35,7 +36,7 @@ def _parse_task_name(data_name):
         return data_name
 
 
-def _parse_finetuning_info(config):
+def _parse_finetuning_info(config) -> Tuple[str, str]:
     """解析微调源和预训练方法信息"""
     if config['fine_tune_from'] == 'scratch':
         return 'scratch', 'scratch'
@@ -44,7 +45,7 @@ def _parse_finetuning_info(config):
         ptw = config['trained_with']
         return ftf, ptw
 
-def _create_log_directory(ptw, task_name, seed):
+def _create_log_directory(ptw: str, task_name: str, seed: int) -> str:
     """创建训练日志目录"""
     timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
     log_dir = Path('training_results/finetuning/Transformer') / f'Trans_{ptw}_{task_name}_{seed}_{timestamp}'
@@ -63,7 +64,7 @@ class FineTune(object):
     - 训练循环：前向 -> 计算损失 -> 反向传播 -> 参数更新
     - 验证与测试：记录损失与 MAE，并保存最佳模型
     """
-    def __init__(self, config, log_dir, logger):
+    def __init__(self, config, log_dir: str, logger):
         self.logger = logger
         self.config = config
         self.device = self._get_device()
@@ -71,14 +72,17 @@ class FineTune(object):
 
         self.random_seed = self.config['dataloader']['randomSeed']
 
-        # 数据来源：CSV。默认第一列为文本（MOFid: "SMILES&&拓扑"），第二列为数值标签。
+        # 数据来源：CSV。默认第一列为文本(MOFid: "SMILES&&拓扑")，第二列为数值标签。
         self.mofdata = self._load_csv_data(self.config['dataset']['dataPath'])
         self.vocab_path = self.config['vocab_path']
         self.tokenizer = MOFTokenizer(self.vocab_path, model_max_length = 512, padding_side='right')
 
         self.train_data, self.valid_data, self.test_data = split_data(
-            self.mofdata, valid_ratio = self.config['dataloader']['valid_ratio'], test_ratio = self.config['dataloader']['test_ratio'], 
-            randomSeed= self.config['dataloader']['randomSeed']
+            self.mofdata, 
+            test_ratio = self.config['dataloader']['test_ratio'], 
+            valid_ratio = self.config['dataloader']['valid_ratio'], 
+            use_ratio = self.config['dataloader']['use_ratio'],
+            randomSeed = self.config['dataloader']['randomSeed']
         )
         
         # 将文本 MOFid 编码为 token id，并与数值标签打包为样本
@@ -91,20 +95,24 @@ class FineTune(object):
         self.valid_loader = self._create_dataloader(self.valid_dataset, shuffle=False)
         self.test_loader = self._create_dataloader(self.test_dataset, shuffle=False)
 
-        # 回归损失：MSE（训练优化的目标）
+        # 回归损失：MSE(训练优化的目标)
         self.criterion = nn.MSELoss()
 
         # 用训练集标签统计均值/方差，训练时对目标做标准化，评估时再反标准化计算 MAE
         self.normalizer = Normalizer(torch.tensor(self.train_dataset.label, dtype=torch.float32))
 
-    def _load_csv_data(self, data_path):
+    def _load_csv_data(self, data_path: str) -> np.ndarray:
         """加载CSV数据文件"""
-        with open(data_path) as f:
-            reader = csv.reader(f)
-            data = [row for row in reader]
-        return np.array(data)
+        try:
+            with open(data_path) as f:
+                reader = csv.reader(f)
+                data = [row for row in reader]
+            return np.array(data)
+        except FileNotFoundError:
+            self.logger.error(f"Data file not found: {data_path}")
+            raise
 
-    def _create_dataloader(self, dataset, shuffle=False):
+    def _create_dataloader(self, dataset, shuffle: bool = False) -> DataLoader:
         """创建DataLoader的工厂函数，减少重复代码"""
         return DataLoader(
             dataset, 
@@ -115,12 +123,12 @@ class FineTune(object):
             pin_memory=False
         )
 
-    def _move_to_device(self, tensor):
-        """根据配置将张量移动到目标设备（CPU/GPU）。"""
+    def _move_to_device(self, tensor) -> torch.Tensor:
+        """根据配置将张量移动到目标设备(CPU/GPU)"""
         return tensor.to(self.device, non_blocking=self.config['cuda'])
 
-    def _prepare_batch(self, inputs, target):
-        """对一个 batch 做设备迁移与标签标准化，返回可用于前向计算的张量对。"""
+    def _prepare_batch(self, inputs, target) -> Tuple[torch.Tensor, torch.Tensor]:
+        """对一个 batch 做设备迁移与标签标准化，返回可用于前向计算的张量对"""
         input_var = self._move_to_device(inputs)
         target_normed = self.normalizer.norm(target)
         target_var = self._move_to_device(target_normed)
@@ -132,7 +140,8 @@ class FineTune(object):
         base_params = []
         
         for name, param in model.named_parameters():
-            if new_layer_identifier in name:
+            # 识别回归头、GSoP层和其他新添加的层
+            if new_layer_identifier in name or 'gsoP' in name.lower():
                 self.logger.info(f"New layer: {name}")
                 new_layer_params.append(param)
             else:
@@ -158,10 +167,10 @@ class FineTune(object):
         elif optimizer_name == 'Adam':
             return optim.Adam(param_groups, weight_decay=weight_decay)
         else:
-            raise NameError(f'Only SGD or Adam is allowed as optimizer, got: {optimizer_name}')
+            raise ValueError(f'Only SGD or Adam is allowed as optimizer, got: {optimizer_name}')
 
     def _get_device(self):
-        """选择计算设备：有 CUDA 且配置不是 CPU 时使用 GPU，否则使用 CPU。"""
+        """选择计算设备：有 CUDA 且配置不是 CPU 时使用 GPU，否则使用 CPU"""
         if torch.cuda.is_available() and self.config['gpu'] != 'cpu':
             device = self.config['gpu']
             torch.cuda.set_device(device)
@@ -172,14 +181,51 @@ class FineTune(object):
         self.logger.info(f"Running on device: {device}")
         return device
 
+    def _train_epoch(self, model, optimizer, epoch: int) -> int:
+        """训练一个epoch，返回迭代次数"""
+        model.train()
+        n_iter = 0
+        
+        for bn, (inputs, target) in enumerate(self.train_loader):
+            input_var, target_var = self._prepare_batch(inputs, target)
+
+            # compute output
+            output = model(input_var)
+            loss = self.criterion(output, target_var)
+
+            if bn % self.config['log_every_n_steps'] == 0:
+                self.writer.add_scalar('train_loss', loss.item(), global_step=n_iter)
+                self.logger.info(f'Epoch {epoch+1:3d} - Training Progress: [{bn+1:3d}/{len(self.train_loader):3d}] | Loss: {loss.item():.4f}')
+            
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            n_iter += 1
+        
+        return n_iter
+
     def train(self):
-        """主训练入口：组网、优化器设置、迭代训练并定期验证与保存最优权重。"""
+        """主训练入口：组网、优化器设置、迭代训练并定期验证与保存最优权重"""
+        # 构建模型
         self.transformer = Transformer(**self.config['Transformer'])
         if self.config['cuda']:
             self.transformer = self.transformer.to(self.device)
 
         model_transformer = self._load_pre_trained_weights(self.transformer)
-        model = TransformerRegressor(transformer=model_transformer, d_model=self.config['Transformer']['d_model']).to(self.device)
+        
+        # Get GSoP configuration from config file, default to False if not present
+        gsoP_config = self.config.get('GSoP', {})
+        use_gsoP = gsoP_config.get('use_gsoP', False)
+        gsoP_mode = gsoP_config.get('mode', '1')
+        gsoP_att_dim = gsoP_config.get('att_dim', 128)
+        
+        model = TransformerRegressor(
+            transformer=model_transformer, 
+            d_model=self.config['Transformer']['d_model'],
+            use_gsoP=use_gsoP,
+            gsoP_mode=gsoP_mode,
+            gsoP_att_dim=gsoP_att_dim
+        ).to(self.device)
         
         # 分离新层参数和基础参数，用于差异化学习率
         new_layer_params, base_params = self._separate_model_parameters(model, 'fc_out')
@@ -193,27 +239,10 @@ class FineTune(object):
         n_iter = 0
         valid_n_iter = 0
         best_valid_mae = np.inf
-        best_valid_loss = np.inf
-        best_valid_roc_auc = 0
 
-        model.train()
-
+        # 训练循环
         for epoch_counter in range(self.config['epochs']):
-            for bn, (inputs, target) in enumerate(self.train_loader):
-                input_var, target_var = self._prepare_batch(inputs, target)
-
-                # compute output
-                output = model(input_var)
-                loss = self.criterion(output, target_var)
-
-                if bn % self.config['log_every_n_steps'] == 0:
-                    self.writer.add_scalar('train_loss', loss.item(), global_step=n_iter)
-                    self.logger.info(f'Epoch {epoch_counter+1:3d} - Training Progress: [{bn+1:3d}/{len(self.train_loader):3d}] | Loss: {loss.item():.4f}')
-                
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                n_iter += 1
+            n_iter = self._train_epoch(model, optimizer, epoch_counter)
 
             # validate the model if requested
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
@@ -229,10 +258,11 @@ class FineTune(object):
         self.model = model
            
     def _load_pre_trained_weights(self, model):
-        """按名称与形状匹配地加载预训练权重；若找不到则从头训练。"""
+        """按名称与形状匹配地加载预训练权重；若找不到则从头训练"""
         try:
             checkpoints_folder = self.config['fine_tune_from']
-            load_state = torch.load(str(Path(checkpoints_folder) / 'model_transformer_14.pth'), map_location=self.device) 
+            model_file = self.config.get('pretrained_model_file', 'model_transformer_14.pth')
+            load_state = torch.load(str(Path(checkpoints_folder) / model_file), map_location=self.device) 
             model_state = model.state_dict()
 
             # Load only matching parameters
@@ -244,16 +274,18 @@ class FineTune(object):
                     model_state[name].copy_(param)
                     loaded_count += 1
                 else:
-                    self.logger.info(f'Parameter not loaded: {name}')
+                    self.logger.debug(f'Parameter not loaded: {name}')
             
             self.logger.info(f"Loaded {loaded_count} pre-trained parameters successfully.")
         except FileNotFoundError:
             self.logger.info("Pre-trained weights not found. Training from scratch.")
+        except Exception as e:
+            self.logger.warning(f"Error loading pre-trained weights: {e}. Training from scratch.")
 
         return model
 
-    def _validate(self, model, valid_loader, n_epoch):
-        """验证阶段：不回传梯度，记录当前损失与 MAE，并打印平均值。"""
+    def _validate(self, model, valid_loader, n_epoch: int) -> Tuple[float, float]:
+        """验证阶段：不回传梯度，记录当前损失与 MAE，并打印平均值"""
         losses = AverageMeter()
         mae_errors = AverageMeter()
 
@@ -278,14 +310,19 @@ class FineTune(object):
         self.logger.info(f'Validation Complete - Final MAE: {mae_errors.avg:.3f}')
         return losses.avg, mae_errors.avg
 
-    def test(self):
-        """测试阶段：加载保存的最佳权重，对测试集评估并保存预测与真值。"""
+    def test(self) -> Tuple[float, float]:
+        """测试阶段：加载保存的最佳权重，对测试集评估并保存预测与真值"""
         self.logger.info('Test Phase - Starting test on test set')
         model_path = str(Path(self.writer.log_dir) / 'checkpoints' / 'model.pth')
         self.logger.info(f'Model Path: {model_path}')
-        state_dict = torch.load(model_path, map_location=self.device)
-        self.model.load_state_dict(state_dict)
-        self.logger.info("Loaded trained model successfully")
+        
+        try:
+            state_dict = torch.load(model_path, map_location=self.device)
+            self.model.load_state_dict(state_dict)
+            self.logger.info("Loaded trained model successfully")
+        except FileNotFoundError:
+            self.logger.error(f"Model file not found: {model_path}")
+            raise
 
         losses = AverageMeter()
         mae_errors = AverageMeter()

@@ -14,11 +14,17 @@ https://www.linkedin.com/in/zhonglincao/?trk=public_profile_browsemap, https://w
 
 ```
 # 创建新环境
+<<<<<<< HEAD
 conda create -n myenv python=3.9
 conda activate moformer
 pip install torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118 --index-url https://download.pytorch.org/whl/cu118
 pip install --ignore-installed ruamel.yaml pymatgen
 pip install transformers tensorboard
+=======
+conda create -n mof python=3.9
+conda activate mof
+pip install torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118 --index-url https://download.pytorch.org/whl/cu118
+>>>>>>> dev-1026
 
 # 克隆MOFormer源代码
 $ git clone https://github.com/zcao0420/MOFormer
