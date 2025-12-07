@@ -10,7 +10,7 @@ num_workers: 0
 task: 'regression'
 
 # BDC模块配置
-use_bdc: false  # 是否使用BDC模块（设置为true启用）
+use_bdc: true  # 是否使用BDC模块（设置为true启用）
 bdc_reduce_dim: 128  # BDC降维维度（可选，设置为null则不降维）
 
 optim:

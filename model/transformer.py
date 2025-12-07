@@ -147,7 +147,7 @@ class BDC_Representation(nn.Module):
 
     def bdc_pooling(self, x: Tensor) -> Tensor:
         """
-        BDC池化：计算双边散度协方差矩阵
+        BDC池化：计算双边散度协方差矩阵（数值稳定版本）
         
         Args:
             x: Tensor, shape [batch, dim, M] - 输入特征
@@ -156,30 +156,39 @@ class BDC_Representation(nn.Module):
             bdc: Tensor, shape [batch, dim, dim] - BDC协方差矩阵
         """
         batchSize, dim, M = x.shape
+        eps = 1e-6  # 增大epsilon以提高数值稳定性
+        
+        # 输入归一化，防止数值爆炸
+        x = x / (x.norm(dim=1, keepdim=True) + eps)
         
         # 单位矩阵和全1矩阵
         I = torch.eye(dim, dim, device=x.device).view(1, dim, dim).repeat(batchSize, 1, 1).type(x.dtype)
         I_M = torch.ones(batchSize, dim, dim, device=x.device).type(x.dtype)
         
         # 计算二次项
-        x_pow2 = x.bmm(x.transpose(1, 2)) / (2 * M)
+        x_pow2 = x.bmm(x.transpose(1, 2)) / (2 * M + eps)
         
         # 计算散度协方差
         dcov = I_M.bmm(x_pow2 * I) + (x_pow2 * I).bmm(I_M) - 2 * x_pow2
-        dcov = torch.clamp(dcov, min=0.0)
-        dcov = torch.sqrt(dcov + 1e-5)
+        
+        # 更严格的clamp和sqrt
+        dcov = torch.clamp(dcov, min=eps)  # 确保严格大于0
+        dcov = torch.sqrt(dcov)
         
         # 中心化
-        d1 = dcov.bmm(I_M / dim)
-        d2 = (I_M / dim).bmm(dcov)
-        d3 = (I_M / dim).bmm(dcov).bmm(I_M / dim)
+        d1 = dcov.bmm(I_M / (dim + eps))
+        d2 = (I_M / (dim + eps)).bmm(dcov)
+        d3 = (I_M / (dim + eps)).bmm(dcov).bmm(I_M / (dim + eps))
         bdc = dcov - d1 - d2 + d3
+        
+        # 输出clamp，防止异常值
+        bdc = torch.clamp(bdc, min=-10.0, max=10.0)
         
         return bdc
     
     def triuvec(self, x: Tensor) -> Tensor:
         """
-        提取上三角矩阵的向量表示
+        提取上三角矩阵的向量表示（数值稳定版本）
         
         Args:
             x: Tensor, shape [batch, dim, dim] - 输入矩阵
@@ -188,16 +197,20 @@ class BDC_Representation(nn.Module):
             y: Tensor, shape [batch, dim*(dim+1)/2] - 上三角向量
         """
         batchSize, dim, _ = x.shape
-        r = x.reshape(batchSize, dim * dim)
-        I = torch.ones(dim, dim).triu().reshape(dim * dim)
-        index = I.nonzero(as_tuple=False)
-        y = torch.zeros(batchSize, int(dim * (dim + 1) / 2), device=x.device).type(x.dtype)
-        y = r[:, index].squeeze()
+        
+        # 使用torch.triu直接提取上三角，避免索引操作
+        mask = torch.triu(torch.ones(dim, dim, device=x.device, dtype=torch.bool))
+        y = x[:, mask]  # [batch, dim*(dim+1)/2]
+        
+        # 检查并替换NaN/Inf
+        if torch.isnan(y).any() or torch.isinf(y).any():
+            y = torch.nan_to_num(y, nan=0.0, posinf=1.0, neginf=-1.0)
+        
         return y
     
     def compute_weighted_features(self, global_token: Tensor, features: Tensor) -> Tensor:
         """
-        使用全局token（如CLS token）计算注意力加权特征
+        使用全局token（如CLS token）计算注意力加权特征（数值稳定版本）
         
         Args:
             global_token: Tensor, shape [batch, d] - 全局token特征
@@ -206,12 +219,23 @@ class BDC_Representation(nn.Module):
         Returns:
             weighted_features: Tensor, shape [batch, seq_len, d] - 加权后的特征
         """
+        eps = 1e-8
         _, _, d = features.shape
-        q = global_token.unsqueeze(1)  # [batch, 1, d]
-        k, v = features, features
         
-        # 计算注意力分数
+        # 归一化输入特征
+        q = global_token.unsqueeze(1)  # [batch, 1, d]
+        q = q / (q.norm(dim=-1, keepdim=True) + eps)
+        
+        k = features / (features.norm(dim=-1, keepdim=True) + eps)
+        v = features
+        
+        # 计算注意力分数（使用缩放点积）
         attn_scores = (q @ k.transpose(-2, -1)) / (d ** 0.5)
+        
+        # Clamp分数防止溢出
+        attn_scores = torch.clamp(attn_scores, min=-50, max=50)
+        
+        # Softmax计算注意力权重
         attn_weights = F.softmax(attn_scores, dim=-1)
         
         # 加权特征
@@ -244,7 +268,7 @@ class BDC_Representation(nn.Module):
 
 class BDCRegressionHead(nn.Module):
     """
-    BDC回归头：将BDC表示映射到回归预测值
+    BDC回归头：将BDC表示映射到回归预测值（数值稳定版本）
     
     输入维度：d_model * (d_model + 1) / 2
     输出维度：1
@@ -261,11 +285,21 @@ class BDCRegressionHead(nn.Module):
             self.dim_reduction = None
             reduce_dim = d_model
         
+        # 添加BatchNorm以提高数值稳定性
+        self.bn0 = nn.BatchNorm1d(bdc_dim)
+        
         # 回归头
         self.layer1 = nn.Linear(bdc_dim, reduce_dim)
+        self.bn1 = nn.BatchNorm1d(reduce_dim)
+        
         self.layer2 = nn.Linear(reduce_dim, reduce_dim // 2)
+        self.bn2 = nn.BatchNorm1d(reduce_dim // 2)
+        
         self.layer3 = nn.Linear(reduce_dim // 2, reduce_dim // 4)
+        self.bn3 = nn.BatchNorm1d(reduce_dim // 4)
+        
         self.layer4 = nn.Linear(reduce_dim // 4, 1)
+        
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.1)
 
@@ -277,11 +311,31 @@ class BDCRegressionHead(nn.Module):
         Returns:
             output: Tensor, shape [batch, 1] - 回归预测值
         """
+        # 检查并替换NaN/Inf
+        if torch.isnan(x).any() or torch.isinf(x).any():
+            x = torch.nan_to_num(x, nan=0.0, posinf=1.0, neginf=-1.0)
+        
+        x = self.bn0(x)
         x = self.dropout(x)
-        x = self.relu(self.layer1(x))
-        x = self.relu(self.layer2(x))
-        x = self.relu(self.layer3(x))
-        return self.layer4(x)
+        
+        x = self.layer1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        
+        x = self.layer2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+        
+        x = self.layer3(x)
+        x = self.bn3(x)
+        x = self.relu(x)
+        
+        output = self.layer4(x)
+        
+        # 最后clamp输出，防止异常值
+        output = torch.clamp(output, min=-100, max=100)
+        
+        return output
 
 
 class TransformerRegressorWithBDC(nn.Module):
@@ -313,7 +367,7 @@ class TransformerRegressorWithBDC(nn.Module):
 
     def forward(self, src: Tensor) -> Tensor:
         """
-        前向传播：使用BDC表示进行回归预测
+        前向传播：使用BDC表示进行回归预测（数值稳定版本）
         
         Args:
             src: Tensor, shape [batch, seq_len] - token id序列
@@ -321,18 +375,35 @@ class TransformerRegressorWithBDC(nn.Module):
         Returns:
             output: Tensor, shape [batch, 1] - 回归预测值
         """
+        eps = 1e-8
+        
         # Transformer编码
         features = self.transformer(src)  # [batch, seq_len, d_model]
+        
+        # 检查Transformer输出
+        if torch.isnan(features).any() or torch.isinf(features).any():
+            features = torch.nan_to_num(features, nan=0.0, posinf=1.0, neginf=-1.0)
         
         # 可选的特征降维
         if self.use_reduction:
             features = self.feature_reduce(features)  # [batch, seq_len, reduce_dim]
+            
+            # 检查降维后的特征
+            if torch.isnan(features).any() or torch.isinf(features).any():
+                features = torch.nan_to_num(features, nan=0.0, posinf=1.0, neginf=-1.0)
         
         # 提取CLS token作为全局特征
         cls_token = features[:, 0, :]  # [batch, d_model or reduce_dim]
         
+        # 归一化CLS token
+        cls_token = cls_token / (cls_token.norm(dim=-1, keepdim=True) + eps)
+        
         # 计算BDC表示
         bdc_features = self.bdc_layer(cls_token, features)  # [batch, bdc_dim]
+        
+        # 检查BDC特征
+        if torch.isnan(bdc_features).any() or torch.isinf(bdc_features).any():
+            bdc_features = torch.nan_to_num(bdc_features, nan=0.0, posinf=1.0, neginf=-1.0)
         
         # 回归预测
         output = self.regressionHead(bdc_features)  # [batch, 1]
