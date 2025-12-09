@@ -9,14 +9,10 @@ vocab_path: 'tokenizer/vocab_full.txt'
 num_workers: 0
 task: 'regression'
 
-# BDC模块配置
-use_bdc: true  # 是否使用BDC模块（设置为true启用）
-bdc_reduce_dim: 128  # BDC降维维度（可选，设置为null则不降维）
-
 optim:
-  optimizer: Adam
+  optimizer: AdamW  # 优化器: Adam, AdamW (推荐), SGD
   init_lr: 0.00005
-  weight_decay: 1e-6
+  weight_decay: 0.01  # AdamW推荐使用更大的weight_decay (0.01-0.1)
   new_layer_lr_multiplier: 200  # 新层学习率倍数
   base_layer_lr_multiplier: 1   # 基础层学习率倍数
 
@@ -39,3 +35,4 @@ Transformer:
   d_hid: 512
   nlayers: 6
   dropout: 0.1
+  pos_encoding_type: 'relative'  # 位置编码类型: 'sinusoidal', 'learnable', 'relative'
