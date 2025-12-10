@@ -182,7 +182,7 @@ class FineTune(object):
         base_lr = self.config['optim']['init_lr']
         base_multiplier = self.config['optim'].get('base_layer_lr_multiplier', 1)
         new_multiplier = self.config['optim'].get('new_layer_lr_multiplier', 200)
-        weight_decay = eval(self.config['optim']['weight_decay'])
+        weight_decay = self.config['optim']['weight_decay']
         
         param_groups = [
             {'params': base_params, 'lr': base_lr * base_multiplier}, 
@@ -199,6 +199,34 @@ class FineTune(object):
             return optim.AdamW(param_groups, weight_decay=weight_decay)
         else:
             raise ValueError(f'Only SGD, Adam, or AdamW is allowed as optimizer, got: {optimizer_name}')
+
+    def _create_scheduler(self, optimizer):
+        """创建学习率调度器"""
+        if 'scheduler' not in self.config or self.config['scheduler'].get('type') == 'None':
+            self.logger.info("No learning rate scheduler configured")
+            return None
+        
+        scheduler_type = self.config['scheduler']['type']
+        
+        if scheduler_type == 'CosineAnnealingLR':
+            T_max = self.config['scheduler'].get('T_max', self.config['epochs'])
+            eta_min = self.config['scheduler'].get('eta_min', 1e-6)
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(
+                optimizer, T_max=T_max, eta_min=eta_min
+            )
+            self.logger.info(f"Using CosineAnnealingLR scheduler: T_max={T_max}, eta_min={eta_min}")
+        elif scheduler_type == 'StepLR':
+            step_size = self.config['scheduler'].get('step_size', 10)
+            gamma = self.config['scheduler'].get('gamma', 0.1)
+            scheduler = optim.lr_scheduler.StepLR(
+                optimizer, step_size=step_size, gamma=gamma
+            )
+            self.logger.info(f"Using StepLR scheduler: step_size={step_size}, gamma={gamma}")
+        else:
+            self.logger.warning(f"Unknown scheduler type: {scheduler_type}, no scheduler will be used")
+            return None
+        
+        return scheduler
 
     def _get_device(self):
         """选择计算设备：有 CUDA 且配置不是 CPU 时使用 GPU，否则使用 CPU"""
@@ -257,6 +285,9 @@ class FineTune(object):
         # 创建优化器，为不同层设置不同的学习率
         optimizer = self._create_optimizer(new_layer_params, base_params)
         
+        # 创建学习率调度器
+        scheduler = self._create_scheduler(optimizer)
+        
         model_checkpoints_folder = str(Path(self.writer.log_dir) / 'checkpoints')
         save_config_file(model_checkpoints_folder, './config_ft_transformer.yaml')
 
@@ -278,6 +309,13 @@ class FineTune(object):
 
                 self.writer.add_scalar('valid_loss', valid_loss, global_step=valid_n_iter)
                 valid_n_iter += 1
+            
+            # 学习率调度
+            if scheduler is not None:
+                scheduler.step()
+                current_lr = scheduler.get_last_lr()[0]
+                self.logger.info(f'Epoch {epoch_counter+1} - Learning rate: {current_lr:.8f}')
+                self.writer.add_scalar('learning_rate', current_lr, global_step=epoch_counter)
             
         self.model = model
            

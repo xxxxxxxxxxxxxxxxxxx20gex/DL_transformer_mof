@@ -16,6 +16,11 @@ optim:
   new_layer_lr_multiplier: 200  # 新层学习率倍数
   base_layer_lr_multiplier: 1   # 基础层学习率倍数
 
+scheduler:
+  type: 'CosineAnnealingLR'  # 学习率调度类型: CosineAnnealingLR, StepLR, None
+  T_max: 30                   # 余弦周期（通常设为总epochs）
+  eta_min: 0.000001           # 最小学习率
+
 dataloader:
   valid_ratio: 0.15
   test_ratio: 0.15
