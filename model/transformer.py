@@ -219,17 +219,24 @@ class TransformerRegressor(nn.Module):
         self.transformer = transformer
         self.regressionHead = regressoionHead(d_model)
 
-    def forward(self, src: Tensor) -> Tensor:
+    def forward(self, src: Tensor = None, input_ids: Tensor = None, **kwargs) -> Tensor:
         """
         前向传播：提取CLS token特征并通过回归头预测
         
         Args:
-            src: Tensor, shape [batch, seq_len] - token id序列
+            src: Tensor, shape [batch, seq_len] - token id序列（位置参数）
+            input_ids: Tensor, shape [batch, seq_len] - token id序列（peft兼容）
+            **kwargs: 其他可能的参数（忽略，用于 peft 兼容性）
             
         Returns:
             output: Tensor, shape [batch, 1] - 回归预测值
         """
-        output = self.transformer(src)
+        # 兼容 peft：优先使用 input_ids，否则使用 src
+        x = input_ids if input_ids is not None else src
+        if x is None:
+            raise ValueError("Either src or input_ids must be provided")
+        
+        output = self.transformer(x)
         cls_token = output[:, 0:1, :]  # [batch, 1, d_model]
         output = self.regressionHead(cls_token)
         return output

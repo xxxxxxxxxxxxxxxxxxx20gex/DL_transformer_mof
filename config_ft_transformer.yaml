@@ -10,16 +10,24 @@ num_workers: 0
 task: 'regression'
 
 optim:
-  optimizer: Adam  # 优化器: Adam, AdamW (推荐), SGD
+  optimizer: AdamW  # 优化器: Adam, AdamW (推荐), SGD
   init_lr: 0.00005
   weight_decay: 0.01  # AdamW推荐使用更大的weight_decay (0.01-0.1)
-  new_layer_lr_multiplier: 200  # 新层学习率倍数
+  new_layer_lr_multiplier: 10   # 新层学习率倍数 (LoRA: 10-20, 标准微调: 200)
   base_layer_lr_multiplier: 1   # 基础层学习率倍数
 
 scheduler:
   type: 'CosineAnnealingLR'  # 学习率调度类型: CosineAnnealingLR, StepLR, None
   T_max: 30                   # 余弦周期（通常设为总epochs）
   eta_min: 0.000001           # 最小学习率
+
+lora:
+  enable: true                # 是否启用 LoRA (Low-Rank Adaptation)
+  r: 16                       # LoRA rank (秩) - 增加表达能力
+  lora_alpha: 32              # LoRA alpha (缩放因子) - 保持为 r 的 2倍
+  lora_dropout: 0.1           # LoRA dropout
+  target_modules: ['self_attn.out_proj', 'linear1', 'linear2']  # 应用到 Attention + FFN
+  # 设置 enable: false 可禁用 LoRA，退回到普通微调
 
 dataloader:
   valid_ratio: 0.15

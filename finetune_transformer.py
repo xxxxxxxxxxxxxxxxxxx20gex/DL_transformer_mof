@@ -20,6 +20,14 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from dataset.dataset_finetune_transformer import MOF_ID_Dataset
 
+# LoRA (Parameter-Efficient Fine-Tuning)
+try:
+    from peft import get_peft_model, LoraConfig, TaskType
+    PEFT_AVAILABLE = True
+except ImportError:
+    PEFT_AVAILABLE = False
+    print("Warning: peft library not installed. LoRA will not be available.")
+
 import warnings
 warnings.simplefilter("ignore")
 warnings.warn("deprecated", UserWarning)
@@ -161,21 +169,38 @@ class FineTune(object):
         target_normed = self.normalizer.norm(target)
         target_var = self._move_to_device(target_normed)
         return input_var, target_var
-
-    def _separate_model_parameters(self, model, new_layer_identifier):
-        """分离模型参数为新层参数和基础参数，用于差异化学习率设置"""
-        new_layer_params = []
-        base_params = []
+    
+    def _separate_model_parameters_with_lora(self, model):
+        """分离模型参数（兼容 LoRA）
+        
+        参数分组策略：
+        - 如果启用 LoRA：LoRA 参数 + 回归头参数（高学习率），其他冻结或低学习率
+        - 如果未启用 LoRA：回归头参数（高学习率），Transformer 参数（低学习率）
+        """
+        high_lr_params = []  # 新层/LoRA 参数（高学习率）
+        low_lr_params = []   # 基础层参数（低学习率）
+        
+        lora_enabled = self.config.get('lora', {}).get('enable', False)
         
         for name, param in model.named_parameters():
-            # 识别回归头和其他新添加的层
-            if new_layer_identifier in name or 'regressionhead' in name.lower():
-                self.logger.info(f"New layer: {name}")
-                new_layer_params.append(param)
+            if not param.requires_grad:
+                continue  # 跳过冻结的参数
+            
+            # LoRA 参数或回归头参数使用高学习率
+            if 'lora' in name.lower() or 'regressionhead' in name.lower() or 'fc_out' in name:
+                self.logger.info(f"High LR param: {name}")
+                high_lr_params.append(param)
             else:
-                base_params.append(param)
+                # 其他可训练参数使用低学习率
+                low_lr_params.append(param)
         
-        return new_layer_params, base_params
+        self.logger.info(f"Parameter groups - High LR: {len(high_lr_params)} params, Low LR: {len(low_lr_params)} params")
+        
+        # 如果没有低学习率参数（全部是 LoRA + 回归头），返回合理的分组
+        if len(low_lr_params) == 0:
+            self.logger.info("No low LR params found (likely using LoRA). All trainable params will use configured learning rates.")
+        
+        return high_lr_params, low_lr_params
 
     def _create_optimizer(self, new_layer_params, base_params):
         """创建优化器，为新层和基础层设置不同的学习率"""
@@ -184,10 +209,16 @@ class FineTune(object):
         new_multiplier = self.config['optim'].get('new_layer_lr_multiplier', 200)
         weight_decay = self.config['optim']['weight_decay']
         
-        param_groups = [
-            {'params': base_params, 'lr': base_lr * base_multiplier}, 
-            {'params': new_layer_params, 'lr': base_lr * new_multiplier}
-        ]
+        # 构建参数组，过滤掉空的参数列表
+        param_groups = []
+        if len(base_params) > 0:
+            param_groups.append({'params': base_params, 'lr': base_lr * base_multiplier})
+
+        if len(new_layer_params) > 0:
+            param_groups.append({'params': new_layer_params, 'lr': base_lr * new_multiplier})
+
+        if len(param_groups) == 0:
+            raise ValueError("No trainable parameters found! Check model configuration.")
         
         optimizer_name = self.config['optim']['optimizer']
         if optimizer_name == 'SGD':
@@ -240,6 +271,81 @@ class FineTune(object):
         self.logger.info(f"Running on device: {device}")
         return device
 
+    def _apply_lora(self, model):
+        """应用 LoRA (Low-Rank Adaptation) 到模型"""
+        if 'lora' not in self.config or not self.config['lora'].get('enable', False):
+            self.logger.info("LoRA is disabled")
+            return model
+        
+        if not PEFT_AVAILABLE:
+            self.logger.error("LoRA is enabled but peft library is not installed. Please run: pip install peft")
+            raise ImportError("peft library is required for LoRA but not installed")
+        
+        # 打印原始参数数量
+        total_params = sum(p.numel() for p in model.parameters())
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        self.logger.info(f"Before LoRA - Total params: {total_params:,} | Trainable: {trainable_params:,}")
+        
+        # 获取 LoRA 配置
+        lora_config_dict = self.config['lora']
+        r = lora_config_dict.get('r', 8)
+        lora_alpha = lora_config_dict.get('lora_alpha', 16)
+        lora_dropout = lora_config_dict.get('lora_dropout', 0.1)
+        target_modules = lora_config_dict.get('target_modules', ['q_proj', 'v_proj'])
+
+        # 创建 LoRA 配置
+        # 注意：PyTorch TransformerEncoderLayer 的 attention 层名称
+        # 需要匹配实际的模块名称模式
+        peft_config = LoraConfig(
+            task_type=TaskType.FEATURE_EXTRACTION,  # 用于特征提取任务
+            r=r,
+            lora_alpha=lora_alpha,
+            lora_dropout=lora_dropout,
+            target_modules=target_modules,
+            bias="none",
+            inference_mode=False,
+        )
+        
+        # 应用 LoRA
+        try:
+            model = get_peft_model(model, peft_config)
+            self.logger.info(f"LoRA applied successfully with config: r={r}, alpha={lora_alpha}, dropout={lora_dropout}")
+            self.logger.info(f"Target modules: {target_modules}")
+            
+            # 打印 LoRA 后的参数数量（应用前）
+            total_params_lora = sum(p.numel() for p in model.parameters())
+            trainable_params_lora = sum(p.numel() for p in model.parameters() if p.requires_grad)
+            self.logger.info(f"After LoRA - Total params: {total_params_lora:,} | Trainable: {trainable_params_lora:,}")
+            
+            # 关键修复：解冻回归头参数（peft 默认会冻结所有非 LoRA 参数）
+            self.logger.info("Unfreezing regression head parameters...")
+            unfrozen_count = 0
+            for name, param in model.named_parameters():
+                if 'regressionhead' in name.lower() or 'regression_head' in name.lower():
+                    param.requires_grad = True
+                    unfrozen_count += 1
+                    self.logger.info(f"  Unfrozen: {name}")
+            
+            if unfrozen_count == 0:
+                self.logger.warning("No regression head parameters found to unfreeze!")
+            else:
+                self.logger.info(f"Unfrozen {unfrozen_count} regression head parameters")
+            
+            # 重新统计可训练参数
+            trainable_params_final = sum(p.numel() for p in model.parameters() if p.requires_grad)
+            self.logger.info(f"Final trainable params: {trainable_params_final:,} (LoRA + Regression Head)")
+            self.logger.info(f"Trainable params reduced by: {(1 - trainable_params_final/trainable_params)*100:.2f}%")
+            
+            # 打印 LoRA 模块详情
+            model.print_trainable_parameters()
+            
+        except Exception as e:
+            self.logger.error(f"Failed to apply LoRA: {e}")
+            self.logger.warning("Falling back to standard fine-tuning without LoRA")
+            return model
+        
+        return model
+
     def _train_epoch(self, model, optimizer, epoch: int) -> int:
         """训练一个epoch，返回迭代次数"""
         model.train()
@@ -279,8 +385,12 @@ class FineTune(object):
             d_model=self.config['Transformer']['d_model']
         ).to(self.device)
         
+        # 应用 LoRA（如果启用）
+        model = self._apply_lora(model)
+        
         # 分离新层参数和基础参数，用于差异化学习率
-        new_layer_params, base_params = self._separate_model_parameters(model, 'fc_out')
+        # 注意：如果使用 LoRA，需要识别 lora 参数
+        new_layer_params, base_params = self._separate_model_parameters_with_lora(model)
 
         # 创建优化器，为不同层设置不同的学习率
         optimizer = self._create_optimizer(new_layer_params, base_params)

@@ -5,4 +5,5 @@ scikit-learn
 numpy
 pymatgen
 transformers
-tensorboard==2.15.1 
+tensorboard
+peft
