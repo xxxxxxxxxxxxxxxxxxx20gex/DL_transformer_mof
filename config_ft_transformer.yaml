@@ -10,7 +10,7 @@ num_workers: 0
 task: 'regression'
 
 optim:
-  optimizer: AdamW  # 优化器: Adam, AdamW (推荐), SGD
+  optimizer: Adam  # 优化器: Adam, AdamW (推荐), SGD
   init_lr: 0.00005
   weight_decay: 0.01  # AdamW推荐使用更大的weight_decay (0.01-0.1)
   new_layer_lr_multiplier: 200  # 新层学习率倍数
