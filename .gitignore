@@ -14,4 +14,4 @@ runs_multiview/
 vpn/
 Ouptput/
 cif_all/cif/*
-
+*.log

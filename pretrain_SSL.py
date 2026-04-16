@@ -11,7 +11,7 @@ from tokenizer.mof_tokenizer import MOFTokenizer
 from model.transformer import TransformerPretrain
 from model.utils import *
 from torch.utils.tensorboard import SummaryWriter
-from dataset.dataset_multiview import CIFData,collate_pool,get_train_val_test_loader
+from dataset.dataset_multiview import build_multiview_dataset, collate_pool, get_train_val_test_loader
 from datetime import datetime
 from loss.barlow_twins import BarlowTwinsLoss
 import yaml
@@ -98,7 +98,10 @@ class Multiview(object):
         # 初始化分词器和数据集
         self.vocab_path = self.config['vocab_path']
         self.tokenizer = MOFTokenizer(self.vocab_path, model_max_length = 512, padding_side='right')
-        self.dataset = CIFData(**self.config['graph_dataset'], tokenizer = self.tokenizer)
+        self.dataset = build_multiview_dataset(**self.config['graph_dataset'], tokenizer=self.tokenizer)
+        logger.info(f"训练数据集后端: {self.dataset.__class__.__name__}")
+        if getattr(self.dataset, 'uses_graph_cache', False):
+            logger.info(f"图缓存目录: {self.dataset.cache_dir}")
  
         # 设置数据加载器
         logger.info("开始创建数据加载器...")
@@ -220,13 +223,18 @@ class Multiview(object):
         for epoch_counter in range(self.config['epochs']):
             logger.info(f"开始第 {epoch_counter} 个epoch的训练...")
             epoch_start_time = time.time()
-            
-            for bn, (graph_data, transformer_data, _) in enumerate(self.train_loader):
+
+            train_iterator = iter(self.train_loader)
+            for bn in range(len(self.train_loader)):
+                fetch_start_time = time.time()
+                graph_data, transformer_data, _ = next(train_iterator)
+                fetch_time = time.time() - fetch_start_time
                 batch_start_time = time.time()
                 
                 # 移动数据到设备
+                move_start_time = time.time()
                 input_graph, input_transformer = self._move_data_to_device(graph_data, transformer_data)
-                data_load_time = time.time() - batch_start_time
+                move_time = time.time() - move_start_time
                 
                 # 前向传播计算损失（使用AMP）
                 optimizer.zero_grad()
@@ -245,11 +253,18 @@ class Multiview(object):
                     self.writer.add_scalar('train_loss', loss.item(), global_step=n_iter)
                     self.writer.add_scalar('cosine_lr_decay', scheduler.get_last_lr()[0], global_step=n_iter)
                     # 计算GPU利用率相关指标
-                    gpu_util = torch.cuda.utilization() if torch.cuda.is_available() else 0
-                    gpu_memory = torch.cuda.memory_allocated() / 1024**3 if torch.cuda.is_available() else 0
+                    gpu_util = 'n/a'
+                    gpu_memory = 0
+                    if torch.cuda.is_available():
+                        gpu_memory = torch.cuda.memory_allocated() / 1024**3
+                        try:
+                            gpu_util = f"{torch.cuda.utilization()}%"
+                        except (ModuleNotFoundError, RuntimeError, AttributeError):
+                            gpu_util = 'n/a'
                     logger.info(f"Epoch {epoch_counter}, Batch {bn}, Loss: {loss.item():.6f}, "
-                              f"data_time={data_load_time:.3f}s, step_time={step_time:.3f}s, "
-                              f"gpu_util={gpu_util}%, gpu_mem={gpu_memory:.1f}GB")
+                              f"fetch_time={fetch_time:.3f}s, move_time={move_time:.3f}s, "
+                              f"step_time={step_time:.3f}s, "
+                              f"gpu_util={gpu_util}, gpu_mem={gpu_memory:.1f}GB")
                 
                 n_iter += 1
 

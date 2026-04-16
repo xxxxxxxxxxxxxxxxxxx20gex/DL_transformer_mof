@@ -22,7 +22,9 @@ model_cgcnn:
   n_h: 1
 
 graph_dataset:
-  root_dir: /media/gzl/HHDisk/lyq/cif_all/cif   # change here to use cif
+  root_dir: ./cif_all/cif
+  cache_dir: ./cif_all/graph_cache_r8_n12_step0.2
+  use_graph_cache: true
   max_num_nbr: 12
   radius: 8
   dmin: 0
