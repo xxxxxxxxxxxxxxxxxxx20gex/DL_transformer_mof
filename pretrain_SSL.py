@@ -4,6 +4,8 @@ import time
 import logging
 import shutil
 import numpy as np
+from pathlib import Path
+from typing import Any, Dict, Optional
 import torch
 import torch.backends.cudnn as cudnn
 from torch.cuda.amp import GradScaler, autocast
@@ -21,39 +23,44 @@ from torch.autograd import Variable
 import warnings
 warnings.simplefilter("ignore")
 
-def setup_logger():
-    """
-    使用basicConfig设置日志配置，支持文件保存和控制台输出
-    """
-    # 创建logs目录
-    log_dir = 'logs'
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    
-    # 获取模块名
+_REPO_ROOT = Path(__file__).resolve().parent
+
+
+def _resolve_ssl_exp_root(config: Optional[Dict[str, Any]]) -> str:
+    """统一实验根目录，默认 <repo>/exp/SSL；可在 config_multiview.yaml 中覆盖 ssl_exp_root。"""
+    raw = (config or {}).get("ssl_exp_root")
+    if not raw:
+        return str(_REPO_ROOT / "exp" / "SSL")
+    p = Path(raw)
+    return str(p.resolve() if p.is_absolute() else (_REPO_ROOT / p).resolve())
+
+
+def setup_logger(ssl_exp_root: str) -> logging.Logger:
+    """日志写入 <ssl_exp_root>/logs/，并同时输出到控制台。"""
     module_name = os.path.splitext(os.path.basename(__file__))[0]
-    
-    # 日志文件名格式：模块名_日期.log
-    today = datetime.now().strftime('%Y-%m-%d')
-    log_filename = os.path.join(log_dir, f'{module_name}_{today}.log')
-    
-    # 使用basicConfig设置日志配置（只配置一次）
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-        handlers=[
-            logging.FileHandler(log_filename, encoding='utf-8'),
-            logging.StreamHandler()  # 控制台输出
-        ],
-        force=True  # 强制重新配置，避免重复配置问题
+    log_dir = os.path.join(ssl_exp_root, "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    today = datetime.now().strftime("%Y-%m-%d")
+    log_filename = os.path.join(log_dir, f"{module_name}_{today}.log")
+
+    lg = logging.getLogger(module_name)
+    lg.handlers.clear()
+    lg.setLevel(logging.INFO)
+    fmt = logging.Formatter(
+        "%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
-    
-    # 获取logger实例
-    logger = logging.getLogger(module_name)
-    return logger
-# 模块级别的logger实例，避免重复创建
-logger = setup_logger()
+    fh = logging.FileHandler(log_filename, encoding="utf-8")
+    fh.setFormatter(fmt)
+    sh = logging.StreamHandler()
+    sh.setFormatter(fmt)
+    lg.addHandler(fh)
+    lg.addHandler(sh)
+    lg.propagate = False
+    return lg
+
+
+logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 
 def _save_config_file(model_checkpoints_folder):
@@ -79,6 +86,7 @@ class Multiview(object):
             config: 包含所有训练配置的字典
         """
         self.config = config
+        self.ssl_exp_root = _resolve_ssl_exp_root(config)
         self.device = self._get_device()
         
         # 启用cuDNN benchmark优化（适用于固定输入尺寸的网络）
@@ -86,10 +94,12 @@ class Multiview(object):
             cudnn.benchmark = True
             logger.info("已启用cuDNN benchmark优化")
         
-        # 设置TensorBoard日志
+        # TensorBoard 与 checkpoints 根目录：<ssl_exp_root>/runs_multiview/<时间戳>/
         current_time = datetime.now().strftime('%b%d_%H-%M-%S')
         dir_name = current_time
-        log_dir = os.path.join('runs_multiview', dir_name)
+        log_dir = os.path.join(self.ssl_exp_root, 'runs_multiview', dir_name)
+        os.makedirs(log_dir, exist_ok=True)
+        logger.info(f"SSL 实验输出目录: {self.ssl_exp_root} (TensorBoard/checkpoints: {log_dir})")
         self.writer = SummaryWriter(log_dir=log_dir)
         
         # 初始化Barlow Twins损失函数
@@ -307,7 +317,13 @@ class Multiview(object):
             tuple: 加载权重后的模型
         """
         try:
-            checkpoints_folder = os.path.join('./runs_multiview', self.config['fine_tune_from'], 'checkpoints')
+            ftf = self.config.get('fine_tune_from')
+            if ftf in (None, '', 'None'):
+                logger.info("fine_tune_from 未设置，从头训练。")
+                return transformer_model, graph_model
+            checkpoints_folder = os.path.join(
+                self.ssl_exp_root, 'runs_multiview', str(ftf), 'checkpoints'
+            )
             state_dict_t = torch.load(os.path.join(checkpoints_folder, 'model_transformer_11.pth'), map_location=self.config['gpu'])
             transformer_model.load_state_dict(state_dict_t)
 
@@ -360,6 +376,8 @@ class Multiview(object):
 
 if __name__ == "__main__":
     config = yaml.load(open("config_multiview.yaml", "r"), Loader=yaml.FullLoader)
+    ssl_root = _resolve_ssl_exp_root(config)
+    setup_logger(ssl_root)
     logger.info(f"Configuration loaded: {config}")
 
     mof_multiview = Multiview(config)

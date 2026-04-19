@@ -45,10 +45,13 @@ def _parse_finetuning_info(config) -> Tuple[str, str]:
         ptw = config['trained_with']
         return ftf, ptw
 
-def _create_log_directory(ptw: str, task_name: str, seed: int) -> str:
-    """创建训练日志目录"""
+def _create_log_directory(
+    ptw: str, task_name: str, seed: int, log_root: Optional[str] = None
+) -> str:
+    """创建训练日志目录：{方法}_{任务}_{seed}_{时间戳}"""
     timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
-    log_dir = Path('training_results/finetuning/Transformer') / f'Trans_{ptw}_{task_name}_{seed}_{timestamp}'
+    base = Path(log_root) if log_root else Path("training_results/finetuning/Transformer")
+    log_dir = base / f"Trans_{ptw}_{task_name}_{seed}_{timestamp}"
     log_dir.mkdir(parents=True, exist_ok=True)
     return str(log_dir)
 
@@ -140,8 +143,7 @@ class FineTune(object):
         base_params = []
         
         for name, param in model.named_parameters():
-            # 识别回归头、GSoP层和其他新添加的层
-            if new_layer_identifier in name or 'gsoP' in name.lower():
+            if new_layer_identifier in name:
                 self.logger.info(f"New layer: {name}")
                 new_layer_params.append(param)
             else:
@@ -156,14 +158,20 @@ class FineTune(object):
         new_multiplier = self.config['optim'].get('new_layer_lr_multiplier', 200)
         weight_decay = eval(self.config['optim']['weight_decay'])
         
-        param_groups = [
-            {'params': base_params, 'lr': base_lr * base_multiplier}, 
-            {'params': new_layer_params, 'lr': base_lr * new_multiplier}
-        ]
-        
         optimizer_name = self.config['optim']['optimizer']
+        if not new_layer_params:
+            param_groups = [{'params': base_params, 'lr': base_lr * base_multiplier}]
+        else:
+            param_groups = [
+                {'params': base_params, 'lr': base_lr * base_multiplier},
+                {'params': new_layer_params, 'lr': base_lr * new_multiplier},
+            ]
         if optimizer_name == 'SGD':
-            return optim.SGD(param_groups, momentum=self.config['optim'].get('momentum', 0.9), weight_decay=weight_decay)
+            return optim.SGD(
+                param_groups,
+                momentum=self.config['optim'].get('momentum', 0.9),
+                weight_decay=weight_decay,
+            )
         elif optimizer_name == 'Adam':
             return optim.Adam(param_groups, weight_decay=weight_decay)
         else:
@@ -206,29 +214,25 @@ class FineTune(object):
 
     def train(self):
         """主训练入口：组网、优化器设置、迭代训练并定期验证与保存最优权重"""
+        if self.config['cuda']:
+            torch.backends.cudnn.benchmark = bool(
+                self.config.get('cudnn_benchmark', False)
+            )
+
         # 构建模型
         self.transformer = Transformer(**self.config['Transformer'])
         if self.config['cuda']:
             self.transformer = self.transformer.to(self.device)
 
         model_transformer = self._load_pre_trained_weights(self.transformer)
-        
-        # Get GSoP configuration from config file, default to False if not present
-        gsoP_config = self.config.get('GSoP', {})
-        use_gsoP = gsoP_config.get('use_gsoP', False)
-        gsoP_mode = gsoP_config.get('mode', '1')
-        gsoP_att_dim = gsoP_config.get('att_dim', 128)
-        
+
         model = TransformerRegressor(
-            transformer=model_transformer, 
+            transformer=model_transformer,
             d_model=self.config['Transformer']['d_model'],
-            use_gsoP=use_gsoP,
-            gsoP_mode=gsoP_mode,
-            gsoP_att_dim=gsoP_att_dim
         ).to(self.device)
-        
-        # 分离新层参数和基础参数，用于差异化学习率
-        new_layer_params, base_params = self._separate_model_parameters(model, 'fc_out')
+
+        # 分离回归头与 Transformer 主干，用于差异化学习率
+        new_layer_params, base_params = self._separate_model_parameters(model, 'regressionHead')
 
         # 创建优化器，为不同层设置不同的学习率
         optimizer = self._create_optimizer(new_layer_params, base_params)
@@ -376,8 +380,13 @@ if __name__ == "__main__":
     # 解析微调源和预训练方法
     ftf, ptw = _parse_finetuning_info(config)
 
-    # 创建日志目录
-    log_dir = _create_log_directory(ptw, task_name, config['dataloader']['randomSeed'])
+    # 创建日志目录（可选 finetune_log_root，否则默认 training_results/finetuning/Transformer）
+    log_dir = _create_log_directory(
+        ptw,
+        task_name,
+        config["dataloader"]["randomSeed"],
+        config.get("finetune_log_root"),
+    )
     log_file = str(Path(log_dir) / 'training.log')
     
     # 配置logger：同时输出到控制台和文件

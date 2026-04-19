@@ -15,3 +15,5 @@ vpn/
 Ouptput/
 cif_all/cif/*
 *.log
+cif/*
+exp/*
