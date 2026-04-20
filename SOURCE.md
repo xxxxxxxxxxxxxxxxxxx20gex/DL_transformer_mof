@@ -1,0 +1,1 @@
+预训练数据集图缓存文件位置：/mnt/WujieAITeam/private/lyq/cif_cache

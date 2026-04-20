@@ -15,7 +15,7 @@ from model.utils import *
 from torch.utils.tensorboard import SummaryWriter
 from dataset.dataset_multiview import build_multiview_dataset, collate_pool, get_train_val_test_loader
 from datetime import datetime
-from loss.barlow_twins import BarlowTwinsLoss
+from loss.clip_loss import ClipContrastiveLoss
 import yaml
 from model.cgcnn_pretrain import CrystalGraphConvNet
 from torch.optim.lr_scheduler import CosineAnnealingLR
@@ -75,7 +75,7 @@ class Multiview(object):
     
     架构说明：
     - 使用Transformer处理序列数据，CGCNN处理图数据
-    - 通过Barlow Twins损失函数实现多视图对比学习
+    - 通过 CLIP 式对称 InfoNCE 对齐两路 embedding（同一样本为正，batch 内其它为负）
     - 支持预训练权重加载和模型检查点保存
     """
     def __init__(self, config):
@@ -102,8 +102,7 @@ class Multiview(object):
         logger.info(f"SSL 实验输出目录: {self.ssl_exp_root} (TensorBoard/checkpoints: {log_dir})")
         self.writer = SummaryWriter(log_dir=log_dir)
         
-        # 初始化Barlow Twins损失函数
-        self.dual_criterion = BarlowTwinsLoss(self.device, config['batch_size'], **config['barlow_loss'])
+        self.dual_criterion = ClipContrastiveLoss(**config['clip_loss'])
         
         # 初始化分词器和数据集
         self.vocab_path = self.config['vocab_path']
@@ -171,17 +170,11 @@ class Multiview(object):
 
     def _step(self, transformer_model, graph_model, transformer_data, graph_data, epsilon = 0):
         """
-        单步训练：计算Barlow Twins损失
+        单步训练：CLIP 式对称对比损失（Transformer 与 CGCNN 各为一路）。
         """
-        # 获取图数据的表示
-        zjs = graph_model(*graph_data)  # [N,C]
-        
-        # 获取Transformer数据的表示
-        zis = transformer_model(transformer_data)
-
-        # 计算Barlow Twins损失
-        loss_barlow = self.dual_criterion(zis, zjs)
-        return loss_barlow
+        z_graph = graph_model(*graph_data)
+        z_text = transformer_model(transformer_data)
+        return self.dual_criterion(z_text, z_graph)
 
     def train(self):
         """

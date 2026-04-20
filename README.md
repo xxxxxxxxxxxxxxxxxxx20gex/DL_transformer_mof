@@ -35,7 +35,7 @@ $ cd MOFormer
 
 ### 预训练
 
-要从头开始使用SSL预训练模型，可以运行`python pretrain_SSL.py`。预训练的配置文件以cif文件的目录和一个名为`id_prop.npy`的文件作为输入。`id_prop.npy`包含`cif id`及其对应的`mof id`字符串表示。我们已经添加了一个名为`cif_toy`的文件夹，其中包含100个MOF的cif文件和`cif_toy`文件夹中数据对应的`id_prop.npy`。如果您打算为`cif_toy`文件夹运行预训练，请确保更新`config_multiview.yaml`，指示根目录的正确位置。预训练数据集可在https://figshare.com/articles/journal_contribution/cif_tar_xz/23532918上找到。
+要从头开始使用SSL预训练模型，可以运行`python pretrain_SSL.py`。预训练的配置文件以cif文件的目录和一个名为`id_prop.npy`的文件作为输入。`id_prop.npy`包含`cif id`及其对应的`mof id`字符串表示。我们已经添加了一个名为`cif_toy`的文件夹，其中包含100个MOF的cif文件和`cif_toy`文件夹中数据对应的`id_prop.npy`。如果您打算为`cif_toy`文件夹运行预训练，请确保更新`config_multiview.yaml`，指示根目录的正确位置。预训练数据集可在https://figshare.com/articles/journal_contribution/cif_tar_xz/23532918 上找到。
 ```
 python pretrain_SSL.py
 ```

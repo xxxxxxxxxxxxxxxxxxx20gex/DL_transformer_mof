@@ -39,9 +39,9 @@ dataloader:
   persistent_workers: true
   prefetch_factor: 4
 
-barlow_loss:
-  embed_size: 512
-  lambd: 0.0051
+# CLIP 式跨模态对比（对称 InfoNCE）；原 Barlow Twins 见 loss/barlow_twins.py
+clip_loss:
+  temperature: 0.07
 
 
 celoss:

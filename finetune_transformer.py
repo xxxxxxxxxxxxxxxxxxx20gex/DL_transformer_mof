@@ -368,7 +368,7 @@ class FineTune(object):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Transformer finetuning')
-    parser.add_argument('--seed', default=1, type=int, metavar='Seed', help='random seed for splitting data (default: 1)')
+    parser.add_argument('--seed', default=42, type=int, metavar='Seed', help='random seed for splitting data (default: 42)')
     args = parser.parse_args(sys.argv[1:])
     
     config = yaml.load(open("config_ft_transformer.yaml", "r"), Loader=yaml.FullLoader)

@@ -2,7 +2,7 @@ batch_size: 128
 epochs: 30
 eval_every_n_epochs: 2
 # 预训练 checkpoint 目录（内含 best_transformer_model.pth）
-fine_tune_from: /home/DL_transformer_mof/exp/SSL/runs_multiview/Apr17_17-39-05/checkpoints
+fine_tune_from: /home/DL_transformer_mof/exp/SSL/runs_multiview/Apr19_17-11-52/checkpoints
 pretrained_model_file: best_transformer_model.pth
 trained_with: multiview
 # 微调独立输出根目录；运行名称为 Trans_{trained_with}_{data_name}_{seed}_{时间戳}
