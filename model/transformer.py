@@ -1,10 +1,9 @@
 """
-Transformer 与回归头（原版）
+Transformer 与回归头。
 
 给初学者的阅读提示：
 - 该文件实现了位置编码 `PositionalEncoding`、Transformer 主干 `Transformer`、预训练模型 `TransformerPretrain`，以及下游回归封装 `TransformerRegressor`。
-- 注意：当前 `PositionalEncoding` 的实现默认输入张量形状为 [seq_len, batch, d_model]，而本项目的 `TransformerEncoderLayer` 使用了 `batch_first=True`（期望 [batch, seq_len, d_model]）。
-  这会导致位置编码加在错误的维度上，推荐使用教学版 `model/transformer_tutorial.py` 里的 batch_first 版本以避免形状混淆。
+- 本项目中的 `TransformerEncoderLayer` 使用 `batch_first=True`，因此位置编码也按 `[batch, seq_len, d_model]` 处理。
 """
 
 import pandas as pd
@@ -26,18 +25,14 @@ class PositionalEncoding(nn.Module):
 
         position = torch.arange(max_len).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
-        pe = torch.zeros(max_len, 1, d_model)
-        pe[:, 0, 0::2] = torch.sin(position * div_term)
-        pe[:, 0, 1::2] = torch.cos(position * div_term)
+        pe = torch.zeros(1, max_len, d_model)
+        pe[0, :, 0::2] = torch.sin(position * div_term)
+        pe[0, :, 1::2] = torch.cos(position * div_term)
         self.register_buffer('pe', pe)
 
     def forward(self, x: Tensor) -> Tensor:
-        """将位置编码加到输入张量上。
-
-        重要：此版本假设输入形状为 [seq_len, batch, d_model]。
-        若你的编码器层使用了 batch_first=True，请改用教学版 `PositionalEncodingBatchFirst`。
-        """
-        x = x + self.pe[:x.size(0)]
+        """将位置编码加到 batch_first 输入张量上。"""
+        x = x + self.pe[:, :x.size(1)]
         return self.dropout(x)
 
 
@@ -146,19 +141,32 @@ class TransformerPretrain(nn.Module):
     def init_weights(self) -> None:
         nn.init.xavier_normal_(self.token_encoder.weight)
 
-    def forward(self, src: Tensor) -> Tensor:
-        """
-        Args:
-            src: Tensor, shape [seq_len, batch_size]
-            src_mask: Tensor, shape [seq_len, seq_len]
-
-        Returns:
-            output Tensor of shape [seq_len, batch_size, ntoken]
-        """
+    def encode_tokens(self, src: Tensor) -> Tensor:
+        """编码输入 token，返回整段序列特征 `[batch, seq_len, d_model]`。"""
         src = self.token_encoder(src) * math.sqrt(self.d_model)
         src = self.pos_encoder(src)
         output = self.transformer_encoder(src)
+        return output
+
+    def pool_sequence(self, output: Tensor) -> Tensor:
+        """将序列特征池化为全局向量，保持与原有预训练头兼容。"""
         output_embed = output[:, 0:1, :]
         output_embed_proj = output_embed.squeeze(1)
         output_embed_proj = self.proj_out(output_embed_proj)
+        return output_embed_proj
+
+    def forward(self, src: Tensor, return_sequence: bool = False):
+        """
+        Args:
+            src: Tensor, shape [batch_size, seq_len]
+            return_sequence: 是否同时返回序列特征
+
+        Returns:
+            默认返回 `[batch, d_model]` 的全局表征；
+            若 `return_sequence=True`，返回 `(pooled, sequence)`。
+        """
+        output = self.encode_tokens(src)
+        output_embed_proj = self.pool_sequence(output)
+        if return_sequence:
+            return output_embed_proj, output
         return output_embed_proj

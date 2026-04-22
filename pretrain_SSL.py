@@ -10,6 +10,7 @@ import torch
 import torch.backends.cudnn as cudnn
 from torch.cuda.amp import GradScaler, autocast
 from tokenizer.mof_tokenizer import MOFTokenizer
+from model.qformer import QFormerBridge
 from model.transformer import TransformerPretrain
 from model.utils import *
 from torch.utils.tensorboard import SummaryWriter
@@ -69,6 +70,19 @@ def _save_config_file(model_checkpoints_folder):
         shutil.copy('./config_multiview.yaml', os.path.join(model_checkpoints_folder, 'config_multiview.yaml'))
 
 
+def _load_state_dict_if_exists(model, checkpoints_folder: str, candidate_names, map_location, model_name: str):
+    """Load the first checkpoint that exists; keep backward compatibility with old naming."""
+    for filename in candidate_names:
+        checkpoint_path = os.path.join(checkpoints_folder, filename)
+        if os.path.exists(checkpoint_path):
+            state_dict = torch.load(checkpoint_path, map_location=map_location)
+            model.load_state_dict(state_dict)
+            logger.info(f"Loaded {model_name} weights from: {checkpoint_path}")
+            return True
+    logger.info(f"{model_name} checkpoint not found in {checkpoints_folder}.")
+    return False
+
+
 class Multiview(object):
     """
     多视图自监督学习训练器
@@ -76,6 +90,7 @@ class Multiview(object):
     架构说明：
     - 使用Transformer处理序列数据，CGCNN处理图数据
     - 通过 CLIP 式对称 InfoNCE 对齐两路 embedding（同一样本为正，batch 内其它为负）
+    - 可选使用轻量 Q-Former bridge，从文本序列特征中抽取对比表征
     - 支持预训练权重加载和模型检查点保存
     """
     def __init__(self, config):
@@ -103,6 +118,7 @@ class Multiview(object):
         self.writer = SummaryWriter(log_dir=log_dir)
         
         self.dual_criterion = ClipContrastiveLoss(**config['clip_loss'])
+        self.use_qformer = bool(self.config.get('qformer', {}).get('enabled', False))
         
         # 初始化分词器和数据集
         self.vocab_path = self.config['vocab_path']
@@ -168,12 +184,16 @@ class Multiview(object):
             input_transformer = transformer_data
         return input_graph, input_transformer
 
-    def _step(self, transformer_model, graph_model, transformer_data, graph_data, epsilon = 0):
+    def _step(self, transformer_model, graph_model, transformer_data, graph_data, qformer_model=None, epsilon = 0):
         """
         单步训练：CLIP 式对称对比损失（Transformer 与 CGCNN 各为一路）。
         """
         z_graph = graph_model(*graph_data)
-        z_text = transformer_model(transformer_data)
+        if qformer_model is not None:
+            _, text_sequence = transformer_model(transformer_data, return_sequence=True)
+            z_text = qformer_model(text_sequence)
+        else:
+            z_text = transformer_model(transformer_data)
         return self.dual_criterion(z_text, z_graph)
 
     def train(self):
@@ -194,18 +214,37 @@ class Multiview(object):
         # 初始化模型
         transformer_model = TransformerPretrain(**self.config["Transformer"]).to(self.device)
         graph_model = CrystalGraphConvNet(orig_atom_fea_len, nbr_fea_len, **self.config['model_cgcnn']).to(self.device)
+        qformer_model = None
+        if self.use_qformer:
+            qformer_cfg = dict(self.config["qformer"])
+            qformer_cfg.pop("enabled", None)
+            qformer_model = QFormerBridge(
+                d_model=self.config["Transformer"]["d_model"],
+                **qformer_cfg,
+            ).to(self.device)
 
         # 打印模型设备信息
         logger.info(f"Transformer model device: {next(transformer_model.parameters()).device}")
         logger.info(f"Graph model device: {next(graph_model.parameters()).device}")
+        if qformer_model is not None:
+            logger.info(f"Q-Former bridge device: {next(qformer_model.parameters()).device}")
 
         # 加载预训练权重
-        transformer_model, graph_model = self._load_pre_trained_weights(transformer_model, graph_model)
+        transformer_model, graph_model, qformer_model = self._load_pre_trained_weights(
+            transformer_model,
+            graph_model,
+            qformer_model,
+        )
 
         # 设置优化器和调度器
-        optimizer = torch.optim.Adam(list(transformer_model.parameters()) + list(graph_model.parameters()), 
-                                   lr = self.config['optim']['init_lr'], 
-                                   weight_decay=eval(self.config['optim']['weight_decay']))
+        optim_params = list(transformer_model.parameters()) + list(graph_model.parameters())
+        if qformer_model is not None:
+            optim_params += list(qformer_model.parameters())
+        optimizer = torch.optim.Adam(
+            optim_params,
+            lr=self.config['optim']['init_lr'],
+            weight_decay=eval(self.config['optim']['weight_decay']),
+        )
         scheduler = CosineAnnealingLR(optimizer, T_max=len(self.train_loader), eta_min=0, last_epoch=-1)
 
         # 初始化AMP scaler
@@ -242,7 +281,13 @@ class Multiview(object):
                 # 前向传播计算损失（使用AMP）
                 optimizer.zero_grad()
                 with autocast(enabled=use_amp and self.config.get('cuda', False)):
-                    loss = self._step(transformer_model, graph_model, input_transformer, input_graph)
+                    loss = self._step(
+                        transformer_model,
+                        graph_model,
+                        input_transformer,
+                        input_graph,
+                        qformer_model=qformer_model,
+                    )
 
                 # 反向传播（使用AMP scaler）
                 scaler.scale(loss).backward()
@@ -277,13 +322,20 @@ class Multiview(object):
 
             # 验证模型
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
-                valid_loss = self._validate(transformer_model, graph_model, self.valid_loader)
+                valid_loss = self._validate(
+                    transformer_model,
+                    graph_model,
+                    self.valid_loader,
+                    qformer_model=qformer_model,
+                )
                 logger.info(f"Validation Loss: {valid_loss:.6f}")
                 if valid_loss < best_valid_loss:
                     # 保存最佳模型（验证损失最低的模型）
                     best_valid_loss = valid_loss
                     torch.save(transformer_model.state_dict(), os.path.join(model_checkpoints_folder, 'best_transformer_model.pth'))
                     torch.save(graph_model.state_dict(), os.path.join(model_checkpoints_folder, 'best_graph_model.pth'))
+                    if qformer_model is not None:
+                        torch.save(qformer_model.state_dict(), os.path.join(model_checkpoints_folder, 'best_qformer_model.pth'))
 
                 self.writer.add_scalar('valid_loss', valid_loss, global_step=valid_n_iter)
                 valid_n_iter += 1
@@ -293,12 +345,14 @@ class Multiview(object):
             if epoch_counter > 0 and epoch_counter % self.config.get('save_every_n_epochs', 5) == 0:
                 torch.save(transformer_model.state_dict(), os.path.join(model_checkpoints_folder, f'model_transformer_epoch_{epoch_counter}.pth'))
                 torch.save(graph_model.state_dict(), os.path.join(model_checkpoints_folder, f'model_graph_epoch_{epoch_counter}.pth'))
+                if qformer_model is not None:
+                    torch.save(qformer_model.state_dict(), os.path.join(model_checkpoints_folder, f'model_qformer_epoch_{epoch_counter}.pth'))
             
             # 学习率调度（前5个epoch为warmup）
             if epoch_counter >= 5:
                 scheduler.step()
     
-    def _load_pre_trained_weights(self, transformer_model, graph_model):
+    def _load_pre_trained_weights(self, transformer_model, graph_model, qformer_model=None):
         """
         加载预训练权重
         
@@ -313,24 +367,44 @@ class Multiview(object):
             ftf = self.config.get('fine_tune_from')
             if ftf in (None, '', 'None'):
                 logger.info("fine_tune_from 未设置，从头训练。")
-                return transformer_model, graph_model
+                return transformer_model, graph_model, qformer_model
             checkpoints_folder = os.path.join(
                 self.ssl_exp_root, 'runs_multiview', str(ftf), 'checkpoints'
             )
-            state_dict_t = torch.load(os.path.join(checkpoints_folder, 'model_transformer_11.pth'), map_location=self.config['gpu'])
-            transformer_model.load_state_dict(state_dict_t)
+            _load_state_dict_if_exists(
+                transformer_model,
+                checkpoints_folder,
+                ['best_transformer_model.pth', 'model_transformer_11.pth'],
+                self.config['gpu'],
+                'Transformer',
+            )
+            _load_state_dict_if_exists(
+                graph_model,
+                checkpoints_folder,
+                ['best_graph_model.pth', 'model_graph_11.pth'],
+                self.config['gpu'],
+                'Graph',
+            )
 
-            state_dict_g = torch.load(os.path.join(checkpoints_folder, 'model_graph_11.pth'), map_location = self.config['gpu'])
-            graph_model.load_state_dict(state_dict_g)
+            if qformer_model is not None:
+                loaded_qformer = _load_state_dict_if_exists(
+                    qformer_model,
+                    checkpoints_folder,
+                    ['best_qformer_model.pth', 'model_qformer_11.pth'],
+                    self.config['gpu'],
+                    'Q-Former',
+                )
+                if not loaded_qformer:
+                    logger.info("Q-Former checkpoint not found. Q-Former will train from scratch.")
 
             logger.info("Loaded pre-trained model with success.")
             
         except FileNotFoundError:
             logger.info("Pre-trained weights not found. Training from scratch.")
 
-        return transformer_model, graph_model
+        return transformer_model, graph_model, qformer_model
 
-    def _validate(self, transformer_model, graph_model, valid_loader):
+    def _validate(self, transformer_model, graph_model, valid_loader, qformer_model=None):
         """
         验证模型性能
         
@@ -347,6 +421,8 @@ class Multiview(object):
         with torch.no_grad():
             transformer_model.eval()
             graph_model.eval()
+            if qformer_model is not None:
+                qformer_model.eval()
 
             loss_total = 0.0
             total_num = 0
@@ -356,7 +432,13 @@ class Multiview(object):
                 
                 # 计算验证损失（使用AMP）
                 with autocast(enabled=use_amp and self.config.get('cuda', False)):
-                    loss = self._step(transformer_model, graph_model, input_transformer, input_graph)
+                    loss = self._step(
+                        transformer_model,
+                        graph_model,
+                        input_transformer,
+                        input_graph,
+                        qformer_model=qformer_model,
+                    )
                 loss_total += loss.item() * len(batch_cif_ids)
                 total_num += len(batch_cif_ids)
                 
@@ -364,6 +446,8 @@ class Multiview(object):
         torch.cuda.empty_cache()
         transformer_model.train()
         graph_model.train()
+        if qformer_model is not None:
+            qformer_model.train()
         return loss_total
 
 

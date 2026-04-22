@@ -154,18 +154,27 @@ def get_train_val_test_loader(dataset, collate_fn=default_collate,
     np.random.shuffle(indices)
     train_sampler = SubsetRandomSampler(indices[:train_size])
     val_sampler = SubsetRandomSampler(indices[train_size:])
-    train_loader = DataLoader(dataset, batch_size=batch_size,
-                              sampler=train_sampler,
-                              num_workers=num_workers, drop_last=True,
-                              collate_fn=collate_fn, pin_memory=pin_memory,
-                              persistent_workers=persistent_workers and num_workers > 0,
-                              prefetch_factor=prefetch_factor if num_workers > 0 else 2)
-    val_loader = DataLoader(dataset, batch_size=batch_size,
-                            sampler=val_sampler,
-                            num_workers=num_workers, drop_last=True,
-                            collate_fn=collate_fn, pin_memory=pin_memory,
-                            persistent_workers=persistent_workers and num_workers > 0,
-                            prefetch_factor=prefetch_factor if num_workers > 0 else 2)
+    loader_kwargs = dict(
+        batch_size=batch_size,
+        num_workers=num_workers,
+        drop_last=True,
+        collate_fn=collate_fn,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers and num_workers > 0,
+    )
+    if num_workers > 0:
+        loader_kwargs["prefetch_factor"] = prefetch_factor
+
+    train_loader = DataLoader(
+        dataset,
+        sampler=train_sampler,
+        **loader_kwargs,
+    )
+    val_loader = DataLoader(
+        dataset,
+        sampler=val_sampler,
+        **loader_kwargs,
+    )
     return train_loader, val_loader
 
 

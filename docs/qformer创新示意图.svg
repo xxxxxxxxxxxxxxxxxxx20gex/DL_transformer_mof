@@ -1,0 +1,127 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+    </marker>
+    <style>
+      .title { font: 700 30px Arial, Helvetica, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 16px Arial, Helvetica, sans-serif; fill: #475569; }
+      .label { font: 700 18px Arial, Helvetica, sans-serif; fill: #0f172a; }
+      .text { font: 400 16px Arial, Helvetica, sans-serif; fill: #1e293b; }
+      .small { font: 400 14px Arial, Helvetica, sans-serif; fill: #475569; }
+      .caption { font: 400 18px Arial, Helvetica, sans-serif; fill: #334155; }
+      .token { font: 600 14px Arial, Helvetica, sans-serif; fill: #0f172a; }
+      .baseline { stroke: #94a3b8; stroke-width: 3; stroke-dasharray: 10 8; fill: none; marker-end: url(#arrow); }
+      .arrow { stroke: #475569; stroke-width: 3.2; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="900" fill="#ffffff"/>
+
+  <text x="80" y="70" class="title">Lightweight Q-Former Bridge for MOF Text-Structure Self-Supervised Alignment</text>
+  <text x="80" y="102" class="subtitle">Replacing single CLS readout with multi-query cross-attention aggregation in the MOFid branch</text>
+
+  <text x="120" y="165" class="label">MOFid branch</text>
+  <text x="110" y="225" class="text">Tokenized MOFid</text>
+  <rect x="100" y="250" width="62" height="40" rx="8" fill="#dbeafe" stroke="#60a5fa"/>
+  <rect x="170" y="250" width="62" height="40" rx="8" fill="#e2e8f0" stroke="#94a3b8"/>
+  <rect x="240" y="250" width="62" height="40" rx="8" fill="#e2e8f0" stroke="#94a3b8"/>
+  <rect x="310" y="250" width="62" height="40" rx="8" fill="#e2e8f0" stroke="#94a3b8"/>
+  <rect x="380" y="250" width="62" height="40" rx="8" fill="#e2e8f0" stroke="#94a3b8"/>
+  <rect x="450" y="250" width="62" height="40" rx="8" fill="#e2e8f0" stroke="#94a3b8"/>
+  <text x="114" y="275" class="token">[CLS]</text>
+  <text x="184" y="275" class="token">metal</text>
+  <text x="252" y="275" class="token">linker</text>
+  <text x="334" y="275" class="token">topology</text>
+  <text x="404" y="275" class="token">...</text>
+  <text x="462" y="275" class="token">[SEP]</text>
+
+  <line x1="520" y1="270" x2="620" y2="270" class="arrow"/>
+
+  <rect x="620" y="200" width="260" height="140" rx="18" fill="#e0f2fe" stroke="#38bdf8" stroke-width="3"/>
+  <text x="678" y="248" class="label">Transformer</text>
+  <text x="695" y="276" class="label">Text Encoder</text>
+  <text x="668" y="310" class="small">MOFid hidden states</text>
+
+  <text x="955" y="165" class="label">Text-side readout</text>
+
+  <path d="M 880 240 C 985 180, 1100 160, 1185 195" class="baseline"/>
+  <text x="1020" y="155" class="small">Original CLS pooling</text>
+
+  <rect x="1185" y="160" width="170" height="70" rx="12" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"/>
+  <text x="1228" y="200" class="text">Text embedding</text>
+
+  <line x1="880" y1="300" x2="970" y2="300" class="arrow"/>
+
+  <rect x="970" y="240" width="400" height="240" rx="24" fill="#fff7ed" stroke="#f97316" stroke-width="4"/>
+  <text x="1090" y="278" class="label">Proposed Q-Former bridge</text>
+  <text x="1088" y="305" class="small">multi-query cross-attention aggregation</text>
+
+  <text x="1000" y="352" class="text">Learnable queries</text>
+  <circle cx="1030" cy="392" r="14" fill="#fdba74" stroke="#ea580c" stroke-width="2"/>
+  <circle cx="1070" cy="392" r="14" fill="#fdba74" stroke="#ea580c" stroke-width="2"/>
+  <circle cx="1110" cy="392" r="14" fill="#fdba74" stroke="#ea580c" stroke-width="2"/>
+  <circle cx="1150" cy="392" r="14" fill="#fdba74" stroke="#ea580c" stroke-width="2"/>
+  <circle cx="1190" cy="392" r="14" fill="#fdba74" stroke="#ea580c" stroke-width="2"/>
+  <circle cx="1230" cy="392" r="14" fill="#fdba74" stroke="#ea580c" stroke-width="2"/>
+  <circle cx="1270" cy="392" r="14" fill="#fdba74" stroke="#ea580c" stroke-width="2"/>
+  <circle cx="1310" cy="392" r="14" fill="#fdba74" stroke="#ea580c" stroke-width="2"/>
+
+  <rect x="1010" y="420" width="120" height="40" rx="10" fill="#ffedd5" stroke="#fb923c"/>
+  <text x="1038" y="446" class="text">Self-attn</text>
+
+  <rect x="1170" y="420" width="170" height="40" rx="10" fill="#ffedd5" stroke="#fb923c"/>
+  <text x="1190" y="446" class="text">Cross-attn to text</text>
+
+  <line x1="1130" y1="440" x2="1170" y2="440" class="arrow"/>
+  <line x1="1070" y1="406" x2="1070" y2="420" class="arrow"/>
+  <line x1="1255" y1="460" x2="1255" y2="500" class="arrow"/>
+
+  <rect x="1185" y="500" width="140" height="42" rx="10" fill="#ffedd5" stroke="#fb923c"/>
+  <text x="1211" y="527" class="text">Mean pooling</text>
+
+  <line x1="1325" y1="521" x2="1405" y2="521" class="arrow"/>
+  <rect x="1405" y="490" width="130" height="62" rx="12" fill="#fff7ed" stroke="#f97316" stroke-width="3"/>
+  <text x="1431" y="528" class="text">Text embedding</text>
+
+  <path d="M 880 300 C 920 300, 940 350, 955 390" stroke="#94a3b8" stroke-width="2.5" stroke-dasharray="6 6" fill="none"/>
+  <text x="885" y="395" class="small">hidden states</text>
+
+  <rect x="995" y="560" width="510" height="70" rx="14" fill="#fff1f2" stroke="#ef4444" stroke-width="2.5"/>
+  <text x="1020" y="590" class="label" fill="#991b1b">Innovation</text>
+  <text x="1140" y="590" class="text">Multi-query cross-attention aggregation replaces</text>
+  <text x="1140" y="616" class="text">single CLS readout for text-side contrastive representation.</text>
+
+  <text x="120" y="610" class="label">Crystal graph branch</text>
+  <text x="110" y="670" class="text">CIF / crystal graph</text>
+  <polygon points="120,720 170,680 230,700 250,760 180,790 120,760" fill="#dcfce7" stroke="#22c55e" stroke-width="3"/>
+  <circle cx="145" cy="730" r="8" fill="#16a34a"/>
+  <circle cx="188" cy="700" r="8" fill="#16a34a"/>
+  <circle cx="220" cy="735" r="8" fill="#16a34a"/>
+  <circle cx="190" cy="770" r="8" fill="#16a34a"/>
+  <line x1="145" y1="730" x2="188" y2="700" stroke="#16a34a" stroke-width="3"/>
+  <line x1="188" y1="700" x2="220" y2="735" stroke="#16a34a" stroke-width="3"/>
+  <line x1="220" y1="735" x2="190" y2="770" stroke="#16a34a" stroke-width="3"/>
+  <line x1="190" y1="770" x2="145" y2="730" stroke="#16a34a" stroke-width="3"/>
+
+  <line x1="270" y1="735" x2="390" y2="735" class="arrow"/>
+
+  <rect x="390" y="665" width="240" height="140" rx="18" fill="#ecfdf5" stroke="#22c55e" stroke-width="3"/>
+  <text x="472" y="720" class="label">CGCNN</text>
+  <text x="448" y="748" class="label">Graph Encoder</text>
+  <text x="448" y="782" class="small">structure embedding</text>
+
+  <line x1="630" y1="735" x2="770" y2="735" class="arrow"/>
+  <rect x="770" y="704" width="145" height="62" rx="12" fill="#f0fdf4" stroke="#22c55e" stroke-width="3"/>
+  <text x="800" y="742" class="text">Graph embedding</text>
+
+  <line x1="1535" y1="521" x2="1535" y2="700" class="arrow"/>
+  <line x1="915" y1="735" x2="1040" y2="735" class="arrow"/>
+
+  <rect x="1040" y="660" width="320" height="150" rx="22" fill="#f8fafc" stroke="#64748b" stroke-width="3"/>
+  <text x="1115" y="716" class="label">Symmetric InfoNCE</text>
+  <text x="1090" y="748" class="text">cross-modal contrastive alignment</text>
+  <text x="1120" y="780" class="small">maximize agreement of paired MOFs</text>
+
+  <text x="80" y="855" class="caption">Figure. The proposed method preserves the original dual-tower SSL framework while replacing the MOFid-side single CLS readout with a lightweight Q-Former bridge.</text>
+</svg>

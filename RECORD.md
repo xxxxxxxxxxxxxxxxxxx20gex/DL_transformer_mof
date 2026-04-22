@@ -52,6 +52,7 @@
 | exp-20260420-2 | stopped | hMOF CO₂ 0.5 bar | InfoNCE, `Apr19_17-11-52` | 200 | 42 | 0.477 | 不补跑 | 输出 `exp/finetune/Trans_multiview_hMOF_CO2_0.5_42_2026-04-20_16-26-16`；best valid @ ep59；训练日志停在 epoch 137；由于后续统一改为 60 epoch，该 200 epoch 设置不再继续，也不再补 test |
 | exp-20260421-1 | done | hMOF CO₂ 0.5 bar | Barlow baseline, `Apr17_17-39-05_baseline` | 60 | 42 | 0.492 | 0.485 | 输出 `exp/finetune/Trans_multiview_hMOF_CO2_0.5_42_2026-04-20_22-50-07`；best valid @ ep55；载入 74 个预训练参数 |
 | exp-20260421-2 | done | hMOF CO₂ 0.5 bar | InfoNCE, `Apr19_17-11-52` | 60 | 42 | 0.497 | 0.491 | 输出 `exp/finetune/Trans_multiview_hMOF_CO2_0.5_42_2026-04-21_10-58-48`；best valid @ ep55；已跑完并完成 test；载入 74 个预训练参数 |
+| exp-20260422-1 | done | hMOF CO₂ 0.5 bar | Q-Former + InfoNCE, `Apr21_16-53-35` | 60 | 42 | 0.462 | 0.454 | 输出 `exp/finetune/Trans_multiview_hMOF_CO2_0.5_42_2026-04-21_23-57-45`；best valid @ ep33；已跑完并完成 test；载入 74 个预训练参数 |
 
 ### 进行中
 
@@ -60,7 +61,8 @@
 
 ## 当前观察
 
-- **Barlow baseline、60 epoch、seed 42**（`exp-20260421-1`）验证最优 **0.492**、测试 **0.485**；**InfoNCE、60 epoch、seed 42**（`exp-20260421-2`）验证最优 **0.497**、测试 **0.491**。在当前这组单次对比里，Barlow 略优于 InfoNCE。
+- **Q-Former + InfoNCE、60 epoch、seed 42**（`exp-20260422-1`）验证最优 **0.462**、测试 **0.454**，明显优于当前已完成的 **Barlow baseline 60 epoch**（**0.485**）和 **InfoNCE 60 epoch**（**0.491**）。
+- 在当前三组 **60 epoch、seed 42** 单次对比里，测试集表现排序为：**Q-Former + InfoNCE (0.454) < Barlow baseline (0.485) < InfoNCE (0.491)**。
 - 两组 **30 epoch** 微调结果几乎一致：**0.4929 vs 0.4927**，说明在较短训练下两种初始化差距很小。
-- 当前更有参考价值的是 **同 seed、同 epochs 的 60 epoch 对比**；若要进一步下结论，仍建议看多个重复实验的均值与方差。
+- 当前更有参考价值的是 **同 seed、同 epochs 的 60 epoch 对比**；Q-Former 这条创新线已在单次实验上表现出明显收益，但若要进一步下结论，仍建议看多个重复实验的均值与方差。
 - **200 epoch InfoNCE** 在 `epoch 59` 达到当前记录中的最优 valid **0.477**，但之后继续训练没有形成稳定收益，且日志最终停在 `epoch 137`。由于后续实验协议已统一为 **60 epoch**，该设置不再继续，也不再补 test。

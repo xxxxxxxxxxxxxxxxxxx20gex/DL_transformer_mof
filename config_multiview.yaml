@@ -5,7 +5,7 @@ save_every_n_epochs: 20 # 每10个epoch保存一次检查点
 # 统一输出根：TensorBoard、checkpoints 在 <ssl_exp_root>/runs_multiview/<时间>/；日志在 <ssl_exp_root>/logs/
 ssl_exp_root: /home/DL_transformer_mof/exp/SSL
 fine_tune_from: None
-log_every_n_steps: 100
+log_every_n_steps: 10
 gpu: cuda:0
 vocab_path: 'tokenizer/vocab_full.txt'
 cuda: true
@@ -42,6 +42,16 @@ dataloader:
 # CLIP 式跨模态对比（对称 InfoNCE）；原 Barlow Twins 见 loss/barlow_twins.py
 clip_loss:
   temperature: 0.07
+
+# 轻量 Q-Former bridge：使用 learnable queries 对文本序列做 cross-attn，
+# 再将 query 输出聚合成文本侧对比表征。关闭时退回原始 CLS-style readout。
+qformer:
+  enabled: true
+  num_queries: 8
+  num_layers: 2
+  nhead: 8
+  dropout: 0.1
+  ff_mult: 4
 
 
 celoss:
